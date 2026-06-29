@@ -1,6 +1,12 @@
-# HD Guild — 디스코드 연동 길드 관리 사이트
+# HD Guild — 디스코드 연동 길드 관리 (백엔드)
 
 Next.js (App Router) + Supabase + Discord OAuth. Netlify 무료 호스팅 기준.
+
+> **현재 이 저장소는 백엔드(API) 중심입니다.** 프론트엔드(UI)는 별도로 같은 Next.js 프로젝트의 `app/`에 추가됩니다.
+> API 명세: [docs/API.md](docs/API.md) · 설계/결정: [docs/PLAN.md](docs/PLAN.md)
+>
+> 구조: `app/api/v1/*`(라우트, 얇음) → `lib/services/*`(로직) → `lib/*`(supabase/discord/config/rbac).
+> 권한: `lib/api/guard.ts`의 `withAuth(handler, { capability })` + `lib/rbac.ts`의 `CAPABILITIES`.
 
 ## 기능
 

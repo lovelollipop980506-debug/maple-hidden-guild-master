@@ -32,7 +32,9 @@ export function resolveTier(
   const has = (ids: string[]) => ids.some((id) => discordRoleIds.includes(id));
   if (has(mapping.admin)) return "admin";
   if (has(mapping.reviewer)) return "reviewer";
-  if (has(mapping.member)) return "member";
+  // member = belongs to the guild with at least one assigned role
+  // (an explicit memberRoleIds mapping still qualifies, but any role does too).
+  if (discordRoleIds.length > 0 || has(mapping.member)) return "member";
   return "guest";
 }
 
@@ -42,19 +44,22 @@ export function atLeast(tier: Tier, required: Tier): boolean {
 }
 
 /**
- * Capability map — what each feature/menu requires.
- * Single source of truth for route gating and nav rendering.
+ * Capability registry — minimum tier required per action.
+ * Single source of truth for API gating. Add a line here to define a new permission.
+ * (Setup/bootstrap is gated separately via a live Discord Manage-Server check.)
  */
 export const CAPABILITIES = {
-  "apply.submit": "guest", // anyone logged in can submit a join application
-  "skills.submit": "member", // only guild members can submit skill verifications
-  "skills.review": "reviewer",
-  "applications.review": "reviewer",
-  "members.manage": "reviewer",
-  "messages.view": "reviewer",
+  "me.read": "guest", // any logged-in user
+  "config.read": "guest",
+  "forms.view": "guest", // list/get form definitions
+  "forms.manage": "admin", // create/edit/delete forms (form builder)
+  "submissions.submit": "guest", // login gate; per-form min tier enforced in service
+  "submissions.mine": "guest",
+  "submissions.review": "reviewer", // approve/reject + view all submissions (incl. discord)
+  "members.view": "reviewer",
+  "members.adjustPoints": "admin",
   "stats.view": "reviewer",
-  "setup.manage": "admin",
-  "admin.all": "admin",
+  "discord.meta": "reviewer", // list guild channels/roles (form builder helpers)
 } as const;
 
 export type Capability = keyof typeof CAPABILITIES;
