@@ -1,0 +1,13 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+# Next.js on Netlify is handled by the official plugin (auto-installed).
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# Scheduled function: poll the Discord channel(s) every 5 minutes
+# and upsert new messages into Supabase. Defined in netlify/functions/poll-messages.ts
+# (the schedule is declared in the function file via `export const config`).
+[functions]
+  node_bundler = "esbuild"

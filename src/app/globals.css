@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  @apply bg-discord-darker text-zinc-100;
+}
+
+.card {
+  @apply rounded-lg border border-zinc-700 bg-discord-dark p-4;
+}
+
+.btn {
+  @apply inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50;
+}
+.btn-primary {
+  @apply btn bg-discord-blurple text-white hover:bg-indigo-500;
+}
+.btn-ghost {
+  @apply btn border border-zinc-600 text-zinc-200 hover:bg-zinc-700;
+}
+.btn-danger {
+  @apply btn bg-red-600 text-white hover:bg-red-500;
+}
+.btn-success {
+  @apply btn bg-emerald-600 text-white hover:bg-emerald-500;
+}
+
+.input {
+  @apply w-full rounded-md border border-zinc-600 bg-discord-darker px-3 py-2 text-sm text-zinc-100 outline-none focus:border-discord-blurple;
+}
+
+.badge {
+  @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium;
+}
