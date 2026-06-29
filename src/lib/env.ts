@@ -1,27 +1,17 @@
 /**
- * Centralized, server-side environment access.
- * Throws early (in dev) when a required value is missing so misconfiguration
- * surfaces immediately rather than as a confusing runtime error later.
+ * Centralized server-side SECRETS only.
+ *
+ * Discord integration *settings* (guild, channels, role mappings) are NOT here —
+ * they live in the DB and are managed via the /setup bootstrap (see lib/config.ts).
+ * Only values that must be provisioned out-of-band (API credentials) stay in env.
  */
 
 function required(name: string): string {
   const v = process.env[name];
-  if (!v) {
-    // Don't hard-crash the whole build in CI where some secrets may be absent;
-    // log loudly and return empty so pages still render with a clear error.
-    if (process.env.NODE_ENV === "production") {
-      console.error(`[env] Missing required env var: ${name}`);
-    }
-    return "";
+  if (!v && process.env.NODE_ENV === "production") {
+    console.error(`[env] Missing required env var: ${name}`);
   }
-  return v;
-}
-
-function list(name: string): string[] {
-  return (process.env[name] ?? "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
+  return v ?? "";
 }
 
 export const env = {
@@ -29,15 +19,6 @@ export const env = {
     clientId: required("DISCORD_CLIENT_ID"),
     clientSecret: required("DISCORD_CLIENT_SECRET"),
     botToken: required("DISCORD_BOT_TOKEN"),
-    guildId: required("DISCORD_GUILD_ID"),
-    sourceChannelIds: list("DISCORD_SOURCE_CHANNEL_IDS"),
-    notifyChannelId: process.env.DISCORD_NOTIFY_CHANNEL_ID ?? "",
-    approvedMemberRoleId: process.env.DISCORD_APPROVED_MEMBER_ROLE_ID ?? "",
-  },
-  roles: {
-    admin: list("DISCORD_ADMIN_ROLE_IDS"),
-    reviewer: list("DISCORD_REVIEWER_ROLE_IDS"),
-    member: list("DISCORD_MEMBER_ROLE_IDS"),
   },
   supabase: {
     url: process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { auth } from "@/auth";
+import { getConfig } from "@/lib/config";
 import { can, type Tier } from "@/lib/rbac";
 import { SignInButton, SignOutButton } from "@/components/AuthButtons";
 
@@ -12,6 +13,7 @@ const TIER_LABEL: Record<Tier, string> = {
 
 export default async function Nav() {
   const session = await auth();
+  const config = await getConfig();
   const tier = (session?.user?.tier as Tier) ?? "guest";
   const loggedIn = !!session?.user?.discordId;
 
@@ -56,6 +58,17 @@ export default async function Nav() {
               <Link href="/admin/stats" className="text-zinc-300 hover:text-white">
                 통계
               </Link>
+            )}
+            {!config.setupCompleted ? (
+              <Link href="/setup" className="font-medium text-amber-400 hover:text-amber-300">
+                ⚙️ 초기 설정
+              </Link>
+            ) : (
+              can(tier, "setup.manage") && (
+                <Link href="/setup" className="text-zinc-300 hover:text-white">
+                  설정
+                </Link>
+              )
             )}
           </div>
         )}

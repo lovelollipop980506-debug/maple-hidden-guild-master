@@ -7,6 +7,7 @@ declare module "next-auth" {
       discordId: string;
       tier: Tier;
       roles: string[];
+      isOwner: boolean;
     } & DefaultSession["user"];
   }
 }
@@ -16,5 +17,6 @@ declare module "next-auth/jwt" {
     discordId?: string;
     tier?: Tier;
     roles?: string[];
+    isOwner?: boolean;
   }
 }

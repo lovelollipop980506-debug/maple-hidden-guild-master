@@ -1,10 +1,14 @@
-import { env } from "@/lib/env";
-
 /**
  * App permission tiers, highest to lowest.
- * Derived from a user's Discord roles at login time.
+ * Derived from a user's Discord roles (and guild-owner status) at login time.
  */
 export type Tier = "admin" | "reviewer" | "member" | "guest";
+
+export type RoleMapping = {
+  admin: string[];
+  reviewer: string[];
+  member: string[];
+};
 
 const TIER_RANK: Record<Tier, number> = {
   admin: 3,
@@ -13,12 +17,22 @@ const TIER_RANK: Record<Tier, number> = {
   guest: 0,
 };
 
-/** Resolve the highest app tier a set of Discord role IDs maps to. */
-export function resolveTier(discordRoleIds: string[]): Tier {
+/**
+ * Resolve the highest app tier for a user.
+ * `forceAdmin` is set when the user holds Discord Administrator permission or is
+ * the guild owner (read live from Discord — not a hardcoded ID). Otherwise the
+ * tier comes from the role->tier mapping.
+ */
+export function resolveTier(
+  discordRoleIds: string[],
+  mapping: RoleMapping,
+  forceAdmin = false,
+): Tier {
+  if (forceAdmin) return "admin";
   const has = (ids: string[]) => ids.some((id) => discordRoleIds.includes(id));
-  if (has(env.roles.admin)) return "admin";
-  if (has(env.roles.reviewer)) return "reviewer";
-  if (has(env.roles.member)) return "member";
+  if (has(mapping.admin)) return "admin";
+  if (has(mapping.reviewer)) return "reviewer";
+  if (has(mapping.member)) return "member";
   return "guest";
 }
 
@@ -29,7 +43,7 @@ export function atLeast(tier: Tier, required: Tier): boolean {
 
 /**
  * Capability map — what each feature/menu requires.
- * Keep route gating and nav rendering driven by this single source of truth.
+ * Single source of truth for route gating and nav rendering.
  */
 export const CAPABILITIES = {
   "apply.submit": "guest", // anyone logged in can submit a join application
@@ -39,6 +53,7 @@ export const CAPABILITIES = {
   "members.manage": "reviewer",
   "messages.view": "reviewer",
   "stats.view": "reviewer",
+  "setup.manage": "admin",
   "admin.all": "admin",
 } as const;
 

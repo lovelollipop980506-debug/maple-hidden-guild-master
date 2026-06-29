@@ -1,14 +1,24 @@
 import Link from "next/link";
 import { auth } from "@/auth";
+import { getConfig } from "@/lib/config";
 import { can, type Tier } from "@/lib/rbac";
 
 export default async function Home() {
   const session = await auth();
+  const config = await getConfig();
   const tier = (session?.user?.tier as Tier) ?? "guest";
   const loggedIn = !!session?.user?.discordId;
 
   return (
     <div className="space-y-8">
+      {loggedIn && !config.setupCompleted && (
+        <Link
+          href="/setup"
+          className="block rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-amber-200 transition-colors hover:bg-amber-500/20"
+        >
+          ⚙️ <strong>초기 설정이 필요합니다.</strong> 디스코드 서버 소유자라면 여기서 연동을 완료하세요. →
+        </Link>
+      )}
       <section className="card">
         <h1 className="text-2xl font-bold text-white">HD Guild 관리 사이트</h1>
         <p className="mt-2 text-zinc-400">

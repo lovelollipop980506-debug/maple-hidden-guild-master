@@ -89,10 +89,19 @@ async function fetchAfter(channelId: string, afterId?: string): Promise<DiscordM
 
 export default async () => {
   const db = supa();
-  const channelIds = (process.env.DISCORD_SOURCE_CHANNEL_IDS ?? "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
+
+  // Source channels come from the DB config (set via the /setup bootstrap),
+  // not env. Skip until setup is complete.
+  const { data: cfg } = await db
+    .from("app_config")
+    .select("source_channel_ids, setup_completed")
+    .eq("id", "default")
+    .maybeSingle();
+
+  if (!cfg?.setup_completed) {
+    return new Response(JSON.stringify({ ok: true, skipped: "setup not completed" }));
+  }
+  const channelIds: string[] = (cfg.source_channel_ids ?? []).filter(Boolean);
 
   let totalInserted = 0;
 

@@ -1,7 +1,9 @@
 import NextAuth from "next-auth";
 import Discord from "next-auth/providers/discord";
 import { env } from "@/lib/env";
-import { getGuildMemberRoles } from "@/lib/discord";
+import { getGuildMemberRoles, getGuildOwnerId, getGuildRoles } from "@/lib/discord";
+import { getConfig } from "@/lib/config";
+import { computePermissions, hasAdmin } from "@/lib/permissions";
 import { resolveTier, type Tier } from "@/lib/rbac";
 import { supabaseAdmin } from "@/lib/supabase/server";
 
@@ -29,8 +31,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       // Runs with `account` only on the initial sign-in.
       if (account?.access_token && profile) {
         const discordId = profile.id as string;
-        const roles = await getGuildMemberRoles(account.access_token);
-        const tier = resolveTier(roles);
+        const config = await getConfig();
+
+        // Role/permission resolution only possible once a guild is configured (post-setup).
+        let roles: string[] = [];
+        let isAdminByDiscord = false; // owner or Administrator permission
+        if (config.guildId) {
+          roles = await getGuildMemberRoles(account.access_token, config.guildId);
+          const ownerId = await getGuildOwnerId(config.guildId);
+          const isOwner = !!ownerId && ownerId === discordId;
+          const guildRoles = await getGuildRoles(config.guildId);
+          isAdminByDiscord = hasAdmin(computePermissions(roles, guildRoles, config.guildId, isOwner));
+        }
+        const tier = resolveTier(
+          roles,
+          { admin: config.adminRoleIds, reviewer: config.reviewerRoleIds, member: config.memberRoleIds },
+          isAdminByDiscord,
+        );
 
         const username = (profile.username as string) ?? "unknown";
         const globalName = (profile.global_name as string | null) ?? null;
@@ -59,6 +76,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.discordId = discordId;
         token.tier = tier;
         token.roles = roles;
+        token.isOwner = isAdminByDiscord;
       }
       return token;
     },
@@ -66,6 +84,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       session.user.discordId = (token.discordId as string) ?? "";
       session.user.tier = (token.tier as Tier) ?? "guest";
       session.user.roles = (token.roles as string[]) ?? [];
+      session.user.isOwner = (token.isOwner as boolean) ?? false;
       return session;
     },
   },

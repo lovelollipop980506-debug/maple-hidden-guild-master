@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireCapability } from "@/lib/session";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { notifyUser, addRole } from "@/lib/discord";
-import { env } from "@/lib/env";
+import { getConfig } from "@/lib/config";
 
 export async function reviewApplication(
   id: string,
@@ -31,6 +31,7 @@ export async function reviewApplication(
   if (error || !app) return { ok: false, error: "이미 처리되었거나 찾을 수 없습니다." };
 
   const applicantId = app.applicant_id as string;
+  const config = await getConfig();
 
   if (decision === "approved") {
     await db
@@ -38,15 +39,20 @@ export async function reviewApplication(
       .update({ member_status: "approved", joined_at: new Date().toISOString() })
       .eq("discord_id", applicantId);
     // Auto-grant the configured Discord role (no-op if unset).
-    if (env.discord.approvedMemberRoleId) {
-      await addRole(applicantId, env.discord.approvedMemberRoleId);
+    if (config.approvedMemberRoleId) {
+      await addRole(config.guildId, applicantId, config.approvedMemberRoleId);
     }
-    await notifyUser(applicantId, "🎉 길드 가입 신청이 **승인**되었습니다! 환영합니다.");
+    await notifyUser(
+      applicantId,
+      "🎉 길드 가입 신청이 **승인**되었습니다! 환영합니다.",
+      config.notifyChannelId,
+    );
   } else {
     await db.from("users").update({ member_status: "rejected" }).eq("discord_id", applicantId);
     await notifyUser(
       applicantId,
       `가입 신청이 반려되었습니다.${note ? ` 사유: ${note}` : ""}`,
+      config.notifyChannelId,
     );
   }
 

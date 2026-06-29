@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireCapability } from "@/lib/session";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { notifyUser } from "@/lib/discord";
+import { getConfig } from "@/lib/config";
 
 export async function reviewSkill(
   id: string,
@@ -29,6 +30,8 @@ export async function reviewSkill(
 
   if (error || !sv) return { ok: false, error: "이미 처리되었거나 찾을 수 없습니다." };
 
+  const config = await getConfig();
+
   if (decision === "approved") {
     const userId = sv.user_id as string;
     const points = sv.points as number;
@@ -47,11 +50,16 @@ export async function reviewSkill(
     const total = (rows ?? []).reduce((sum, r) => sum + (r.delta as number), 0);
     await db.from("users").update({ total_points: total }).eq("discord_id", userId);
 
-    await notifyUser(userId, `✅ 스킬 인증 "${sv.skill}"이(가) 승인되어 +${points}p 적립되었습니다.`);
+    await notifyUser(
+      userId,
+      `✅ 스킬 인증 "${sv.skill}"이(가) 승인되어 +${points}p 적립되었습니다.`,
+      config.notifyChannelId,
+    );
   } else {
     await notifyUser(
       sv.user_id as string,
       `스킬 인증 "${sv.skill}"이(가) 반려되었습니다.${note ? ` 사유: ${note}` : ""}`,
+      config.notifyChannelId,
     );
   }
 

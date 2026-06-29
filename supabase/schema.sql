@@ -90,6 +90,23 @@ create table if not exists public.poll_cursor (
   updated_at        timestamptz not null default now()
 );
 
+-- ---------- app_config ----------
+-- Single-row Discord integration config, set via the in-app /setup bootstrap
+-- (guild, channels, role->tier mappings). Secrets stay in env.
+create table if not exists public.app_config (
+  id                      text primary key default 'default',
+  guild_id                text,
+  source_channel_ids      text[] not null default '{}',
+  notify_channel_id       text,
+  approved_member_role_id text,
+  admin_role_ids          text[] not null default '{}',
+  reviewer_role_ids       text[] not null default '{}',
+  member_role_ids         text[] not null default '{}',
+  setup_completed         boolean not null default false,
+  updated_by              text,
+  updated_at              timestamptz not null default now()
+);
+
 -- ---------- audit_log ----------
 create table if not exists public.audit_log (
   id              uuid primary key default gen_random_uuid(),
@@ -113,6 +130,10 @@ alter table public.point_ledger enable row level security;
 alter table public.messages enable row level security;
 alter table public.poll_cursor enable row level security;
 alter table public.audit_log enable row level security;
+alter table public.app_config enable row level security;
+
+-- Ensure the single config row exists.
+insert into public.app_config (id) values ('default') on conflict (id) do nothing;
 
 -- =============================================================
 -- Storage bucket for evidence images.
