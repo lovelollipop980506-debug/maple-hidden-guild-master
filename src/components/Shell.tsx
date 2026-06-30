@@ -22,7 +22,7 @@ const ADMIN = [
 export function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || "/";
   const router = useRouter();
-  const { me, loading } = useMe();
+  const { me } = useMe();
   const { data: stats } = useApi<Stats>("/api/v1/stats");
 
   const isOp = tierAtLeast(me?.tier, "reviewer");
@@ -38,7 +38,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (loading && !me) {
+  // 인증이 확정될 때까지(로딩 중이거나 미인증→로그인 리다이렉트 중) 쉘을 그리지 않고
+  // 스피너만 보여준다. me 가 있어야만 쉘 렌더 → 쉘 깜빡임 후 로그인 튕김 방지.
+  if (!me) {
     return <Loading />;
   }
 
