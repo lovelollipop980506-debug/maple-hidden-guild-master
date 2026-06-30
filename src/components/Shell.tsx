@@ -17,7 +17,7 @@ const ADMIN = [
   { href: "/admin/pending", label: "인증 대기", badge: "certs" },
   { href: "/admin/logs", label: "승인 로그" },
   { href: "/admin/notices", label: "공지 관리" },
-  { href: "/admin/setup", label: "설정" },
+  { href: "/admin/setup", label: "설정", adminOnly: true }, // 길드 마스터(소유자/관리자)만
 ];
 
 export function Shell({ children }: { children: React.ReactNode }) {
@@ -27,6 +27,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const { data: stats } = useApi<Stats>("/api/v1/stats");
 
   const isOp = tierAtLeast(me?.tier, "reviewer");
+  const isAdmin = tierAtLeast(me?.tier, "admin");
   const active = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
 
   // 길드원(역할 보유)이 아니면(=guest) 가입 신청 페이지로 보낸다.
@@ -69,7 +70,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
             <div className="side-line" />
             <div className="nav-label">운영</div>
             <div className="nav">
-              {ADMIN.map((n) => (
+              {ADMIN.filter((n) => isAdmin || !n.adminOnly).map((n) => (
                 <NavBtn key={n.href} {...n} />
               ))}
             </div>

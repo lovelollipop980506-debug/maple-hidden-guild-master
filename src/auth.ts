@@ -1,11 +1,21 @@
 import NextAuth from "next-auth";
 import Discord from "next-auth/providers/discord";
 import { env } from "@/lib/env";
-import { getGuildMemberRoles, getGuildOwnerId, getGuildRoles, getManageableGuilds } from "@/lib/discord";
+import {
+  getGuildMemberRoles,
+  getGuildOwnerId,
+  getGuildRoles,
+  getManageableGuilds,
+  getMemberRoles,
+  getBotGuilds,
+} from "@/lib/discord";
 import { getConfig } from "@/lib/config";
 import { computePermissions, hasAdmin } from "@/lib/permissions";
 import { resolveTier, type Tier } from "@/lib/rbac";
 import { supabaseAdmin } from "@/lib/supabase/server";
+
+// 등급 재검증 주기(ms). 스테일 JWT(로그인 시점 등급)가 잠금 길드 기준과 어긋나면 보정.
+const TIER_REVALIDATE_MS = 10 * 60 * 1000;
 
 /**
  * Auth.js (NextAuth v5) configuration.
@@ -85,6 +95,43 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.roles = roles;
         token.isOwner = isAdminByDiscord;
         token.accessToken = account.access_token;
+        token.tierCheckedAt = Date.now();
+        return token;
+      }
+
+      // 리프레시 경로(account 없음): 잠금 길드 기준으로 등급을 주기적으로 재검증한다.
+      // 봇 토큰으로 조회하므로 사용자 access token 만료와 무관. 봇이 길드에 없으면(부트스트랩
+      // 전) 누구도 멤버로 식별될 수 없으니 guest 로 강등 → 스테일 admin 세션이 권한 유지 못함.
+      const did = token.discordId as string | undefined;
+      const checkedAt = (token.tierCheckedAt as number | undefined) ?? 0;
+      if (did && Date.now() - checkedAt > TIER_REVALIDATE_MS) {
+        try {
+          const config = await getConfig();
+          const guildId = config.guildId; // 잠금 설정 시 항상 운영 길드
+          let tier: Tier = "guest";
+          let roles: string[] = [];
+          let isOwner = false;
+          if (guildId) {
+            const bots = await getBotGuilds();
+            if (bots.some((g) => g.id === guildId)) {
+              roles = (await getMemberRoles(guildId, did)) ?? [];
+              const ownerId = await getGuildOwnerId(guildId);
+              const guildRoles = await getGuildRoles(guildId);
+              isOwner = hasAdmin(computePermissions(roles, guildRoles, guildId, !!ownerId && ownerId === did));
+              tier = resolveTier(
+                roles,
+                { admin: config.adminRoleIds, reviewer: config.reviewerRoleIds, member: config.memberRoleIds },
+                isOwner,
+              );
+            }
+          }
+          token.tier = tier;
+          token.roles = roles;
+          token.isOwner = isOwner;
+          token.tierCheckedAt = Date.now();
+        } catch (e) {
+          console.error("[auth] tier revalidation failed:", e);
+        }
       }
       return token;
     },

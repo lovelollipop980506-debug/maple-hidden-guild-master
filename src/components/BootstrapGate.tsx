@@ -1,5 +1,5 @@
 "use client";
-import { signOut } from "next-auth/react";
+import { signIn, signOut } from "next-auth/react";
 import { useApi } from "@/lib/client/useApi";
 import { Loading } from "@/components/Loading";
 
@@ -30,8 +30,8 @@ export function BootstrapGate({ children }: { children: React.ReactNode }) {
           <a className="discord-btn" href={data.inviteUrl} target="_blank" rel="noreferrer" style={{ marginTop: 22 }}>
             봇 초대하기
           </a>
-          <button className="auth-cancel full" onClick={() => window.location.reload()} style={{ marginTop: 10 }}>
-            초대를 마쳤어요 — 새로고침
+          <button className="auth-cancel full" onClick={() => signIn("discord", { callbackUrl: "/" })} style={{ marginTop: 10 }}>
+            초대를 마쳤어요 — 다시 로그인
           </button>
           <button
             onClick={() => signOut({ callbackUrl: "/login" })}

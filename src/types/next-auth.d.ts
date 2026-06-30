@@ -20,5 +20,6 @@ declare module "next-auth/jwt" {
     roles?: string[];
     isOwner?: boolean;
     accessToken?: string;
+    tierCheckedAt?: number; // 등급 재검증 시각(ms) — 스테일 세션 권한 유지 방지
   }
 }
