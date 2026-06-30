@@ -1,0 +1,67 @@
+/* ============================================================
+   HIDDEN Guild — Webfonts
+   Maplestory (메이플스토리체, Nexon, free license) — the authentic game
+   font; carries the nostalgia for all display, UI labels and buttons.
+   Galmuri (pixel/bitmap, OFL 1.1) — optional retro accent for tiny numerals.
+   Pretendard (OFL 1.1) — clean Korean sans for readable body copy.
+   Files are bundled in /assets/fonts (self-contained, no CDN).
+   ============================================================ */
+
+@font-face {
+  font-family: "Maplestory";
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  src: url("../assets/fonts/Maplestory-Bold.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Maplestory";
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+  src: url("../assets/fonts/Maplestory-Light.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Galmuri11";
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  src: url("../assets/fonts/Galmuri11-Regular.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Galmuri11";
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  src: url("../assets/fonts/Galmuri11-Bold.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Galmuri9";
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  src: url("../assets/fonts/Galmuri9.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Pretendard";
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  src: url("../assets/fonts/Pretendard-Regular.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Pretendard";
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+  src: url("../assets/fonts/Pretendard-SemiBold.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Pretendard";
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  src: url("../assets/fonts/Pretendard-Bold.woff2") format("woff2");
+}

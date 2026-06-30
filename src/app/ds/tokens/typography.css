@@ -1,0 +1,43 @@
+/* ============================================================
+   HIDDEN Guild — Typography tokens
+   Galmuri11 (pixel) carries the game-UI nostalgia: headings, buttons,
+   labels, numbers. Pretendard handles readable body copy.
+   Galmuri renders crispest at 12px and integer multiples (24/36/48),
+   so the display scale steps in those increments.
+   ============================================================ */
+
+:root {
+  /* Families */
+  --font-display: "Maplestory", "Apple SD Gothic Neo", sans-serif; /* game font — headings/UI/buttons */
+  --font-pixel: "Galmuri11", monospace;                            /* retro pixel accent */
+  --font-pixel-sm: "Galmuri9", "Galmuri11", monospace;             /* tiny pixel captions */
+  --font-body: "Pretendard", "Apple SD Gothic Neo", system-ui, sans-serif;
+  --font-numeric: "Maplestory", "Galmuri11", monospace;            /* points, KPIs, counts */
+
+  /* Body scale (Pretendard) */
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-base: 15px;
+  --text-md: 16px;
+  --text-lg: 18px;
+  --text-xl: 21px;
+
+  /* Display scale (Maplestory game font) */
+  --display-sm: 24px;
+  --display-md: 34px;
+  --display-lg: 46px;
+
+  /* Weights */
+  --weight-regular: 400;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* Line heights */
+  --leading-pixel: 1.15;   /* pixel text — keep tight, it has built-in space */
+  --leading-tight: 1.3;
+  --leading-body: 1.65;
+
+  /* Letter spacing */
+  --tracking-pixel: 0.01em;
+  --tracking-body: 0;
+}
