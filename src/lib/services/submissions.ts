@@ -6,6 +6,7 @@ import { atLeast, type Tier } from "@/lib/rbac";
 import { ApiError } from "@/lib/api/respond";
 import { getForm, getFormById, type Form } from "@/lib/services/forms";
 import { registerMember, incrementMemberSkill } from "@/lib/services/members";
+import type { SubmittedData, ResolvedAttachment } from "@/lib/discord-interactions";
 
 /** Run a form's on-approve side effects (grant role / award points). */
 async function runOnApprove(form: Form, userId: string | null, answers: Record<string, unknown>, actorId: string) {
@@ -132,6 +133,106 @@ export async function submitForm(formKey: string, userId: string, tier: Tier, fo
     target_type: "form_submission",
     target_id: data.id,
     detail: { form: form.key },
+  });
+  return { id: data.id, status };
+}
+
+/**
+ * Best-effort copy of a Discord attachment into the evidence bucket.
+ * Discord CDN URLs expire (~24h), so we re-host; on any failure we fall back to
+ * the raw URL so a submission is never lost.
+ */
+async function rehostToEvidence(
+  db: ReturnType<typeof supabaseAdmin>,
+  userId: string,
+  field: string,
+  att: ResolvedAttachment,
+): Promise<string> {
+  try {
+    const res = await fetch(att.url);
+    if (!res.ok) return att.url;
+    const buf = new Uint8Array(await res.arrayBuffer());
+    if (buf.byteLength > 8 * 1024 * 1024) return att.url;
+    const ext = (att.filename.split(".").pop() || "png").toLowerCase();
+    const path = `${userId}/${Date.now()}-${field}.${ext}`;
+    const { error } = await db.storage
+      .from(env.supabase.evidenceBucket)
+      .upload(path, buf, { contentType: att.content_type || `image/${ext}`, upsert: false });
+    if (error) return att.url;
+    return db.storage.from(env.supabase.evidenceBucket).getPublicUrl(path).data.publicUrl;
+  } catch {
+    return att.url;
+  }
+}
+
+/**
+ * Submit a form via a Discord modal. No app session/tier — any guild member who
+ * can click the button may submit; reviewers gate at the review queue. Stored
+ * identically to web/polled submissions (source='discord') so the review and
+ * approval pipeline is fully reused.
+ *
+ * Runs inline (single serverless invocation) and must finish within Discord's
+ * 3s window. The only slow step is image re-hosting, which is best-effort and
+ * falls back to the raw CDN URL. If image-heavy forms start timing out, switch
+ * to a deferred response (type 5) + followup worker.
+ */
+export async function submitDiscordForm(
+  formKey: string,
+  userId: string,
+  authorName: string,
+  submitted: SubmittedData,
+) {
+  const form = await getForm(formKey);
+  if (!form.active) throw new ApiError("not_found", "사용할 수 없는 폼입니다.", 404);
+
+  const db = supabaseAdmin();
+  const { data: dup } = await db
+    .from("form_submissions")
+    .select("id")
+    .eq("form_id", form.id)
+    .eq("user_id", userId)
+    .eq("status", "pending")
+    .maybeSingle();
+  if (dup) throw new ApiError("conflict", "이미 검토 대기 중인 제출이 있어요.", 409);
+
+  const answers: Record<string, unknown> = { author_name: authorName };
+  for (const f of form.fields) {
+    const v = submitted.values[f.name];
+    if (f.type === "image") {
+      const ids = Array.isArray(v) ? (v as string[]) : v ? [String(v)] : [];
+      const att = ids.map((id) => submitted.attachments[id]).find(Boolean);
+      if (att) answers[f.name] = await rehostToEvidence(db, userId, f.name, att);
+      else if (f.required) throw new ApiError("invalid", `${f.label}을(를) 첨부해주세요.`);
+      else answers[f.name] = null;
+    } else if (f.type === "number") {
+      const s = v == null ? "" : String(v).trim();
+      if (f.required && !s) throw new ApiError("invalid", `${f.label}을(를) 입력해주세요.`);
+      if (s && !Number.isFinite(Number(s))) throw new ApiError("invalid", `${f.label}은(는) 숫자여야 해요.`);
+      answers[f.name] = s ? Number(s) : null;
+    } else {
+      const s = Array.isArray(v) ? String(v[0] ?? "") : v == null ? "" : String(v);
+      const t = s.trim();
+      if (f.required && !t) throw new ApiError("invalid", `${f.label}을(를) 입력해주세요.`);
+      answers[f.name] = f.type === "checkbox" ? t === "true" || t === "on" || t === "1" : t;
+    }
+  }
+
+  const status = form.requiresApproval ? "pending" : "approved";
+  const { data, error } = await db
+    .from("form_submissions")
+    .insert({ form_id: form.id, form_key: form.key, user_id: userId, answers, status, source: "discord" })
+    .select("id")
+    .single();
+  if (error) throw new ApiError("db", "제출에 실패했어요.", 500);
+
+  if (status === "approved") await runOnApprove(form, userId, answers, userId);
+
+  await db.from("audit_log").insert({
+    actor_id: userId,
+    action: "submission.create",
+    target_type: "form_submission",
+    target_id: data.id,
+    detail: { form: form.key, via: "discord_modal" },
   });
   return { id: data.id, status };
 }

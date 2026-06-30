@@ -16,9 +16,12 @@ function required(name: string): string {
 
 export const env = {
   discord: {
-    clientId: required("DISCORD_CLIENT_ID"),
+    clientId: required("DISCORD_CLIENT_ID"), // also the Application ID
     clientSecret: required("DISCORD_CLIENT_SECRET"),
     botToken: required("DISCORD_BOT_TOKEN"),
+    // Ed25519 public key for verifying Interactions webhook requests.
+    // Developer Portal → your app → General Information → Public Key.
+    publicKey: required("DISCORD_PUBLIC_KEY"),
   },
   supabase: {
     url: process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
