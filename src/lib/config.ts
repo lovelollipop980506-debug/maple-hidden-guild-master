@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { supabaseAdmin } from "@/lib/supabase/server";
+import { env } from "@/lib/env";
 
 /**
  * Runtime Discord integration config (DB-backed, managed via /setup).
@@ -30,15 +31,17 @@ const EMPTY: AppConfig = {
 
 /** Read the single config row. Memoized per request. Returns defaults if absent. */
 export const getConfig = cache(async (): Promise<AppConfig> => {
+  // 잠금 길드가 설정되면 DB 값과 무관하게 항상 이 길드로 고정한다(테넌트 lock).
+  const locked = env.lockedGuildId;
   try {
     const { data } = await supabaseAdmin()
       .from("app_config")
       .select("*")
       .eq("id", "default")
       .maybeSingle();
-    if (!data) return EMPTY;
+    if (!data) return { ...EMPTY, guildId: locked || EMPTY.guildId };
     return {
-      guildId: data.guild_id ?? "",
+      guildId: locked || (data.guild_id ?? ""),
       guildName: data.guild_name ?? "",
       notifyChannelId: data.notify_channel_id ?? "",
       adminRoleIds: data.admin_role_ids ?? [],
@@ -49,7 +52,7 @@ export const getConfig = cache(async (): Promise<AppConfig> => {
     };
   } catch (e) {
     console.error("[config] read failed:", e);
-    return EMPTY;
+    return { ...EMPTY, guildId: locked || EMPTY.guildId };
   }
 });
 

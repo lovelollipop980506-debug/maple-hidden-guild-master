@@ -15,6 +15,10 @@ function required(name: string): string {
 }
 
 export const env = {
+  // 운영 길드 잠금(단일 테넌트 고정). 설정되면 부트스트랩 자동감지를 끄고 이 길드로만
+  // 동작 → 다른 길드로 부트스트랩/셋업/탈취 불가. 길드 ID는 비-시크릿이라 납품 fail-safe
+  // 기본값을 박아 둔다(누가 app_config를 비워도 잠금은 유지). env(GUILD_ID)로 덮어쓰기 가능.
+  lockedGuildId: process.env.GUILD_ID ?? "1519043102512513124",
   discord: {
     clientId: required("DISCORD_CLIENT_ID"), // also the Application ID
     clientSecret: required("DISCORD_CLIENT_SECRET"),
