@@ -31,12 +31,13 @@
 | 메서드 | 경로 | 권한 | 설명 |
 |---|---|---|---|
 | `GET/POST` | `/api/auth/*` | 공개 | Auth.js (Discord 로그인) |
-| `GET` | `/api/v1/me` | 로그인 | 내 프로필+등급 `{discordId,name,avatar,tier,isAdmin,roles,memberStatus,totalPoints}` |
+| `GET` | `/api/v1/me` | 로그인 | 내 프로필+등급 `{discordId,name,avatar,tier,isAdmin,roles,memberStatus,totalPoints,characterName,level,job}` |
+| `PUT` | `/api/v1/me/profile` | 로그인 | 내 캐릭터 프로필 수정 `{characterName,level,job}` |
 
 ## 2) 설정 / 부트스트랩
 | 메서드 | 경로 | 권한 | 설명 |
 |---|---|---|---|
-| `GET` | `/api/v1/config` | 로그인 | `{ setupCompleted, guildId }` |
+| `GET` | `/api/v1/config` | 로그인 | `{ setupCompleted, guildId, guildName }` |
 | `GET` | `/api/v1/setup/options` | 소유자/관리권한자 | 감지 서버·채널·역할(+추천등급)·현재설정 |
 | `PUT` | `/api/v1/setup` | 소유자/관리권한자 | 저장 `{ guildId, notifyChannelId, roleTiers }` |
 | `GET` | `/api/v1/discord/meta` | reviewer | 길드 채널·역할 목록 (폼 빌더용) |
@@ -74,6 +75,9 @@
 
 - **승인 부수효과**(폼 `onApprove`): `grantRoleId`→봇 역할부여+멤버승격 / `awardPointsField|Fixed`→포인트 적립. 처리 후 제출자에게 알림(DM→채널).
 - **디스코드 수집**: `intake=discord` 폼은 예약함수가 채널 메시지를 `source=discord` 제출로 적재(answers=`{content,image_url,author_name}`) → 같은 검토 큐에서 확인.
+- **검토 목록 응답**: 각 항목에 `forms:{title}` + (web) 제출자 `user:{username,global_name,avatar}` 포함. (discord는 `answers.author_name` 사용)
+- **멤버 상세**: `pointLogs:[{id,delta,reason,created_at}]` 포함. 멤버 목록/상세에 `character_name,level,job` 포함.
+- **가입 승인 시**: answers의 `character_name/level/job`이 사용자 프로필로 동기화됨.
 
 ## 5) 멤버 관리
 | 메서드 | 경로 | 권한 | 설명 |

@@ -8,6 +8,7 @@ import { supabaseAdmin } from "@/lib/supabase/server";
  */
 export type AppConfig = {
   guildId: string;
+  guildName: string;
   notifyChannelId: string;
   adminRoleIds: string[];
   reviewerRoleIds: string[];
@@ -17,6 +18,7 @@ export type AppConfig = {
 
 const EMPTY: AppConfig = {
   guildId: "",
+  guildName: "",
   notifyChannelId: "",
   adminRoleIds: [],
   reviewerRoleIds: [],
@@ -35,6 +37,7 @@ export const getConfig = cache(async (): Promise<AppConfig> => {
     if (!data) return EMPTY;
     return {
       guildId: data.guild_id ?? "",
+      guildName: data.guild_name ?? "",
       notifyChannelId: data.notify_channel_id ?? "",
       adminRoleIds: data.admin_role_ids ?? [],
       reviewerRoleIds: data.reviewer_role_ids ?? [],
@@ -59,6 +62,7 @@ export async function saveConfig(
       {
         id: "default",
         guild_id: c.guildId || null,
+        guild_name: c.guildName || null,
         notify_channel_id: c.notifyChannelId || null,
         admin_role_ids: c.adminRoleIds,
         reviewer_role_ids: c.reviewerRoleIds,

@@ -20,6 +20,13 @@ async function runOnApprove(form: Form, userId: string | null, answers: Record<s
     await addRole(config.guildId, userId, form.onApprove.grantRoleId);
   }
 
+  // Sync known profile fields from the form answers (e.g. join form).
+  const profile: Record<string, unknown> = {};
+  if (typeof answers.character_name === "string") profile.character_name = answers.character_name;
+  if (typeof answers.job === "string") profile.job = answers.job;
+  if (answers.level != null && Number.isFinite(Number(answers.level))) profile.level = Number(answers.level);
+  if (Object.keys(profile).length) await db.from("users").update(profile).eq("discord_id", userId);
+
   let points = 0;
   if (form.onApprove.awardPointsField) points += Number(answers[form.onApprove.awardPointsField] ?? 0);
   if (form.onApprove.awardPointsFixed) points += Number(form.onApprove.awardPointsFixed);
@@ -124,18 +131,37 @@ export async function listSubmissionsForReview(opts: {
   limit: number;
   offset: number;
 }) {
-  let q = supabaseAdmin()
+  const db = supabaseAdmin();
+  let q = db
     .from("form_submissions")
-    .select("id, form_id, form_key, user_id, answers, status, source, discord_message_id, created_at", {
-      count: "exact",
-    })
+    .select(
+      "id, form_id, form_key, user_id, answers, status, source, discord_message_id, created_at, forms:form_id(title)",
+      { count: "exact" },
+    )
     .order("created_at", { ascending: false });
   if (opts.formKey) q = q.eq("form_key", opts.formKey);
   if (opts.status) q = q.eq("status", opts.status);
   if (opts.source) q = q.eq("source", opts.source);
 
   const { data, count } = await q.range(opts.offset, opts.offset + opts.limit - 1);
-  return { items: data ?? [], total: count ?? 0, limit: opts.limit, offset: opts.offset };
+  const items = data ?? [];
+
+  // Attach submitter info for web submissions. (user_id has no FK — discord
+  // authors may not be site users — so we merge manually instead of embedding.)
+  const ids = [...new Set(items.filter((i) => i.source === "web" && i.user_id).map((i) => i.user_id as string))];
+  let userMap: Record<string, { username: string; global_name: string | null; avatar: string | null }> = {};
+  if (ids.length) {
+    const { data: users } = await db
+      .from("users")
+      .select("discord_id, username, global_name, avatar")
+      .in("discord_id", ids);
+    userMap = Object.fromEntries(
+      (users ?? []).map((u) => [u.discord_id, { username: u.username, global_name: u.global_name, avatar: u.avatar }]),
+    );
+  }
+  const withUser = items.map((i) => ({ ...i, user: i.user_id ? userMap[i.user_id as string] ?? null : null }));
+
+  return { items: withUser, total: count ?? 0, limit: opts.limit, offset: opts.offset };
 }
 
 export async function reviewSubmission(

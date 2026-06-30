@@ -13,6 +13,9 @@ create table if not exists public.users (
   tier            text not null default 'guest',   -- admin | reviewer | member | guest
   total_points    integer not null default 0,
   member_status   text not null default 'none',    -- none | applied | approved | rejected
+  character_name  text,                            -- 메이플 캐릭터명 (프로필)
+  level           integer,                         -- 캐릭터 레벨
+  job             text,                            -- 직업
   joined_at       timestamptz,
   last_login      timestamptz,
   created_at      timestamptz not null default now()
@@ -82,6 +85,7 @@ create table if not exists public.poll_cursor (
 create table if not exists public.app_config (
   id                text primary key default 'default',
   guild_id          text,
+  guild_name        text,
   notify_channel_id text,
   admin_role_ids    text[] not null default '{}',
   reviewer_role_ids text[] not null default '{}',
@@ -133,6 +137,8 @@ values
   'join', '가입 신청서', '길드 가입을 신청합니다.',
   '[
     {"name":"character_name","label":"캐릭터명","type":"text","required":true},
+    {"name":"job","label":"직업","type":"text"},
+    {"name":"level","label":"레벨","type":"number"},
     {"name":"playtime","label":"플레이 시간대","type":"text"},
     {"name":"referral","label":"가입 경로","type":"text"},
     {"name":"introduction","label":"자기소개","type":"textarea"}

@@ -50,6 +50,7 @@ export function atLeast(tier: Tier, required: Tier): boolean {
  */
 export const CAPABILITIES = {
   "me.read": "guest", // any logged-in user
+  "me.update": "guest", // edit own profile
   "config.read": "guest",
   "forms.view": "guest", // list/get form definitions
   "forms.manage": "admin", // create/edit/delete forms (form builder)

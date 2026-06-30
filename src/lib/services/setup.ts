@@ -81,8 +81,11 @@ export async function saveSetup(userId: string, input: SetupInput) {
     else if (tier === "member") memberRoleIds.push(roleId);
   }
 
+  const botGuilds = await getBotGuilds();
+  const guildName = botGuilds.find((g) => g.id === guildId)?.name ?? "";
+
   const { error } = await saveConfig(
-    { guildId, notifyChannelId: input.notifyChannelId ?? "", adminRoleIds, reviewerRoleIds, memberRoleIds },
+    { guildId, guildName, notifyChannelId: input.notifyChannelId ?? "", adminRoleIds, reviewerRoleIds, memberRoleIds },
     userId,
     true,
   );
