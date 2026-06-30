@@ -44,28 +44,17 @@ export interface Notice {
   created_at: string;
 }
 
-/** members.attributes 의 메이플 도메인 형태(프론트 해석용). */
-export interface MemberAttributes {
-  rank?: string;
-  job?: string;
-  level?: number;
-  boss?: number;
-  ignore?: number;
-  power?: number;
-  joinDate?: string;
-  skills?: { boss?: number; ignore?: number; attack?: number; exp?: number; accuracy?: number };
-  // 디스코드 동기화 필드
-  discordId?: string;
-  avatar?: string | null;
-  discordRoles?: string[];
-}
-
-export interface Member {
-  id: string;
+/** 길드원(계산값). 별도 로스터 없이 users + 승인된 인증에서 파생. */
+export interface GuildMember {
+  discordId: string;
   nick: string;
-  attributes: MemberAttributes;
-  active: boolean;
-  created_at: string;
+  job: string | null;
+  level: number | null;
+  avatar: string | null;
+  tier: Tier;
+  roles: string[];
+  joinedAt: string | null;
+  skills: Record<string, number>;
   weekCount: number;
   totalSkills: number;
 }

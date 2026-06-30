@@ -4,6 +4,7 @@ import { signOut } from "next-auth/react";
 import { useMe } from "@/lib/client/useMe";
 import { useApi } from "@/lib/client/useApi";
 import { tierAtLeast, type Stats } from "@/lib/client/types";
+import { Loading } from "@/components/Loading";
 
 const MAIN = [
   { href: "/", label: "홈" },
@@ -13,8 +14,7 @@ const MAIN = [
 ];
 const ADMIN = [
   { href: "/admin/applications", label: "가입 신청", badge: "apps" },
-  { href: "/admin/directory", label: "길드원 조회" },
-  { href: "/admin/members", label: "멤버 관리" },
+  { href: "/admin/directory", label: "길드원" },
   { href: "/admin/pending", label: "인증 대기", badge: "certs" },
   { href: "/admin/logs", label: "승인 로그" },
   { href: "/admin/weekly", label: "주간 현황" },
@@ -42,7 +42,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
   }
 
   if (loading && !me) {
-    return <div style={{ padding: 40, color: "var(--muted)" }}>불러오는 중…</div>;
+    return <Loading />;
   }
 
   return (

@@ -1,7 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { Shell } from "@/components/Shell";
 import { useApi } from "@/lib/client/useApi";
+import { Loading } from "@/components/Loading";
 
 type InviteInfo = {
   clientId: string;
@@ -14,9 +14,10 @@ export default function InvitePage() {
   const router = useRouter();
   const { data, loading } = useApi<InviteInfo>("/api/v1/discord/invite");
 
+  if (loading && !data) return <Loading />;
+
   return (
-    <Shell>
-      <section className="viewPage active">
+    <section className="viewPage active">
         <div className="page-head">
           <div>
             <h2>봇 초대</h2>
@@ -28,9 +29,7 @@ export default function InvitePage() {
         </div>
 
         <div className="card" style={{ padding: 22 }}>
-          {loading ? (
-            <div className="empty">불러오는 중…</div>
-          ) : data?.needsRelogin ? (
+          {data?.needsRelogin ? (
             <div className="empty">
               초대 가능한 서버를 보려면 다시 로그인이 필요합니다.{" "}
               <button className="more" onClick={() => router.push("/login")} style={{ marginLeft: 8 }}>
@@ -82,6 +81,5 @@ export default function InvitePage() {
           )}
         </div>
       </section>
-    </Shell>
   );
 }

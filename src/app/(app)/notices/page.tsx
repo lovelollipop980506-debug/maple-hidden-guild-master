@@ -1,7 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { Shell } from "@/components/Shell";
 import { useApi } from "@/lib/client/useApi";
+import { Loading } from "@/components/Loading";
 import type { Notice } from "@/lib/client/types";
 
 function fmt(d: string | null) {
@@ -15,9 +15,10 @@ export default function NoticesPage() {
   const { data: notices, loading } = useApi<Notice[]>("/api/v1/notices");
   const list = notices ?? [];
 
+  if (loading && !notices) return <Loading />;
+
   return (
-    <Shell>
-      <section className="viewPage active">
+    <section className="viewPage active">
         <div className="page-head">
           <div>
             <h2>공지사항</h2>
@@ -29,9 +30,7 @@ export default function NoticesPage() {
         </div>
 
         <div className="card" style={{ padding: 22 }}>
-          {loading ? (
-            <div className="empty">불러오는 중…</div>
-          ) : list.length === 0 ? (
+          {list.length === 0 ? (
             <div className="empty">등록된 공지사항이 없습니다.</div>
           ) : (
             <div className="notice-modal-list">
@@ -46,6 +45,5 @@ export default function NoticesPage() {
           )}
         </div>
       </section>
-    </Shell>
   );
 }

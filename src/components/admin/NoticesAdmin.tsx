@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useApi } from "@/lib/client/useApi";
 import { apiPost, apiPut, apiDelete, ApiError } from "@/lib/client/api";
 import { toast } from "@/lib/client/toast";
+import { Loading } from "@/components/Loading";
 import type { Notice } from "@/lib/client/types";
 
 export function NoticesAdmin() {
@@ -13,6 +14,8 @@ export function NoticesAdmin() {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [busy, setBusy] = useState(false);
+
+  if (loading && !data) return <Loading />;
 
   function clear() {
     setEditId(null);
@@ -94,9 +97,7 @@ export function NoticesAdmin() {
       </div>
 
       <div className="notice-list" style={{ marginTop: 14 }}>
-        {loading ? (
-          <div className="card empty">불러오는 중…</div>
-        ) : list.length === 0 ? (
+        {list.length === 0 ? (
           <div className="card empty">등록된 공지가 없습니다.</div>
         ) : (
           list.map((n) => (

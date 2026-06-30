@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useApi } from "@/lib/client/useApi";
 import { apiPut, ApiError } from "@/lib/client/api";
 import { toast } from "@/lib/client/toast";
+import { Loading } from "@/components/Loading";
 
 type SetupOptions = {
   setupCompleted: boolean;
@@ -35,7 +36,7 @@ export function SetupPanel() {
     setMap(Object.fromEntries(data.roles.map((r) => [r.id, r.suggestedTier])));
   }, [data, guildId]);
 
-  if (loading && !data) return <div className="panel active card empty">불러오는 중…</div>;
+  if (loading && !data) return <Loading />;
   if (error || !data) {
     return (
       <div className="panel active">

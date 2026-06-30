@@ -3,6 +3,7 @@ import { useApi } from "@/lib/client/useApi";
 import { apiPost, ApiError } from "@/lib/client/api";
 import { toast } from "@/lib/client/toast";
 import { ROUTE_LABELS } from "@/lib/client/maple";
+import { Loading } from "@/components/Loading";
 import type { ListResult, ReviewSubmission } from "@/lib/client/types";
 
 function fmt(iso: string) {
@@ -13,6 +14,8 @@ function fmt(iso: string) {
 export function Applications() {
   const { data, loading, reload } = useApi<ListResult<ReviewSubmission>>("/api/v1/submissions?formKey=join");
   const rows = data?.items ?? [];
+
+  if (loading && !data) return <Loading />;
 
   async function decide(id: string, decision: "approved" | "rejected") {
     try {
@@ -47,13 +50,7 @@ export function Applications() {
             </tr>
           </thead>
           <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan={8} className="empty">
-                  불러오는 중…
-                </td>
-              </tr>
-            ) : rows.length === 0 ? (
+            {rows.length === 0 ? (
               <tr>
                 <td colSpan={8} className="empty">
                   접수된 가입 신청이 없습니다.

@@ -5,7 +5,6 @@ import { env } from "@/lib/env";
 import { atLeast, type Tier } from "@/lib/rbac";
 import { ApiError } from "@/lib/api/respond";
 import { getForm, getFormById, type Form } from "@/lib/services/forms";
-import { registerMember, incrementMemberSkill } from "@/lib/services/members";
 import type { SubmittedData, ResolvedAttachment } from "@/lib/discord-interactions";
 
 /** Run a form's on-approve side effects (grant role / award points). */
@@ -13,33 +12,28 @@ async function runOnApprove(form: Form, userId: string | null, answers: Record<s
   const db = supabaseAdmin();
   const config = await getConfig();
 
-  // 멤버 로스터 등록 (가입 승인) — userId 와 무관, answers.nick 기준
-  const reg = form.onApprove.registerMember;
-  if (reg) {
-    const nick = String((answers as any)[reg.nickField] ?? "").trim();
-    if (nick) {
-      const attributes: Record<string, unknown> = {
-        ...(reg.defaults ?? {}),
-        joinDate: new Date().toISOString().slice(0, 10),
-      };
-      for (const [attrKey, ansField] of Object.entries(reg.attrFields ?? {})) {
-        if ((answers as any)[ansField] != null) attributes[attrKey] = (answers as any)[ansField];
-      }
-      await registerMember(nick, attributes);
-    }
-  }
-
-  // 멤버 길드 스킬 증가 (인증 승인)
-  const inc = form.onApprove.incrementMemberSkill;
-  if (inc) {
-    const nick = String((answers as any)[inc.nickField] ?? "").trim();
-    const skill = String((answers as any)[inc.skillField] ?? "");
-    const count = Number((answers as any)[inc.countField] ?? 0);
-    if (nick && skill && count > 0) await incrementMemberSkill(nick, skill, count, inc.max ?? 20);
-  }
-
-  // ---- 이하 사이트 사용자(userId) 대상 효과 ----
+  // ---- 사이트 사용자(userId) 대상 효과 ----
   if (!userId) return;
+
+  // 프로필 동기화 (가입 승인): answers → users 프로필(캐릭터명/직업/레벨 등)
+  const prof = form.onApprove.profile;
+  if (prof) {
+    const patch: Record<string, unknown> = {};
+    if (prof.nickField) {
+      const nick = String((answers as any)[prof.nickField] ?? "").trim();
+      if (nick) patch.character_name = nick;
+    }
+    for (const [col, field] of Object.entries(prof.fields ?? {})) {
+      const v = (answers as any)[field];
+      if (v == null || v === "") continue;
+      if (col === "level") {
+        if (Number.isFinite(Number(v))) patch.level = Number(v);
+      } else {
+        patch[col] = String(v);
+      }
+    }
+    if (Object.keys(patch).length) await db.from("users").update(patch).eq("discord_id", userId);
+  }
 
   if (form.onApprove.grantRoleId) {
     await db

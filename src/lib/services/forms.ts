@@ -16,10 +16,9 @@ export type OnApprove = {
   grantRoleId?: string;
   awardPointsField?: string;
   awardPointsFixed?: number;
-  // 멤버 로스터 등록 (가입 승인): answers[nickField] 로 member 생성
-  registerMember?: { nickField: string; attrFields?: Record<string, string>; defaults?: Record<string, unknown> };
-  // 멤버 길드 스킬 증가 (인증 승인): members.attributes.skills[answers[skillField]] += answers[countField]
-  incrementMemberSkill?: { nickField: string; skillField: string; countField: string; max?: number };
+  // 프로필 동기화 (가입 승인): answers 값을 users 프로필에 반영.
+  // nickField → users.character_name, fields = { usersColumn: answerField } (job/level 등).
+  profile?: { nickField?: string; fields?: Record<string, string> };
 };
 
 export type Form = {

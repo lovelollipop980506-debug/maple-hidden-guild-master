@@ -1,8 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Shell } from "@/components/Shell";
 import { useApi } from "@/lib/client/useApi";
+import { Loading } from "@/components/Loading";
 import type { Stats, Notice } from "@/lib/client/types";
 
 function fmtNoticeDate(d: string | null) {
@@ -13,7 +13,7 @@ function fmtNoticeDate(d: string | null) {
 
 export default function HomePage() {
   const router = useRouter();
-  const { data: stats } = useApi<Stats>("/api/v1/stats");
+  const { data: stats, loading: statsLoading } = useApi<Stats>("/api/v1/stats");
   const { data: notices } = useApi<Notice[]>("/api/v1/notices");
   const [ni, setNi] = useState(0);
 
@@ -28,9 +28,10 @@ export default function HomePage() {
   const s = stats;
   const pct = s?.weeklyPercent ?? 0;
 
+  if (statsLoading && !stats) return <Loading />;
+
   return (
-    <Shell>
-      <section className="viewPage active">
+    <section className="viewPage active">
         <div className="hero">
           <div className="brand">
             <div className="name">
@@ -112,6 +113,5 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-    </Shell>
   );
 }
