@@ -44,6 +44,9 @@ export default function JoinPage() {
 
   if (!me || tierAtLeast(me.tier, "member")) return <Loading />;
 
+  // 숫자만 + 최대 자릿수 제한 (HTML max 속성은 직접 입력을 못 막음)
+  const onlyDigits = (v: string, maxLen: number) => v.replace(/\D/g, "").slice(0, maxLen);
+
   function toggleSlot(key: string) {
     setSlots((prev) => (prev.includes(key) ? prev.filter((s) => s !== key) : [...prev, key]));
   }
@@ -108,12 +111,11 @@ export default function JoinPage() {
               <label>레벨</label>
               <input
                 className="input"
-                type="number"
-                min={1}
-                max={200}
+                type="text"
+                inputMode="numeric"
                 placeholder="1 ~ 200"
                 value={level}
-                onChange={(e) => setLevel(e.target.value)}
+                onChange={(e) => setLevel(onlyDigits(e.target.value, 3))}
               />
             </div>
             <div className="form-row">
@@ -137,11 +139,11 @@ export default function JoinPage() {
             </div>
             <div className="form-row">
               <label>보공</label>
-              <input className="input" type="number" min={0} placeholder="숫자만" value={boss} onChange={(e) => setBoss(e.target.value)} />
+              <input className="input" type="text" inputMode="numeric" placeholder="숫자만 (최대 3자리)" value={boss} onChange={(e) => setBoss(onlyDigits(e.target.value, 3))} />
             </div>
             <div className="form-row">
               <label>방무</label>
-              <input className="input" type="number" min={0} placeholder="숫자만" value={ignore} onChange={(e) => setIgnore(e.target.value)} />
+              <input className="input" type="text" inputMode="numeric" placeholder="숫자만 (최대 3자리)" value={ignore} onChange={(e) => setIgnore(onlyDigits(e.target.value, 3))} />
             </div>
             <div className="form-row" style={{ alignItems: "start" }}>
               <label style={{ paddingTop: 6 }}>접속 시간대</label>
