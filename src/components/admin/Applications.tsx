@@ -1,5 +1,5 @@
 "use client";
-import { useApi, mutate } from "@/lib/client/useApi";
+import { useApi } from "@/lib/client/useApi";
 import { apiPost, ApiError } from "@/lib/client/api";
 import { toast } from "@/lib/client/toast";
 import { Loading } from "@/components/Loading";
@@ -20,8 +20,7 @@ export function Applications() {
     try {
       await apiPost(`/api/v1/submissions/${id}/review`, { decision });
       toast(decision === "approved" ? "가입 승인했습니다" : "가입 신청을 반려했습니다");
-      reload();
-      mutate("/api/v1/stats");
+      reload(); // 사이드바 stats 는 api 클라이언트가 공통 재검증
     } catch (e) {
       toast((e as ApiError).message);
     }
