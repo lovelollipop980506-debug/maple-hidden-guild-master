@@ -160,15 +160,9 @@ export default function JoinPage() {
                       const key = `${day} ${t.key}`;
                       const on = slots.includes(key);
                       return (
-                        <button
-                          type="button"
-                          key={key}
-                          className={`slot-cell${on ? " on" : ""}`}
-                          aria-pressed={on}
-                          onClick={() => toggleSlot(key)}
-                        >
-                          {on ? "✓" : ""}
-                        </button>
+                        <label key={key} className={`slot-cell${on ? " on" : ""}`}>
+                          <input type="checkbox" checked={on} onChange={() => toggleSlot(key)} />
+                        </label>
                       );
                     })}
                   </Fragment>
