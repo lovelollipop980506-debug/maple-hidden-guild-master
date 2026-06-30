@@ -18,8 +18,8 @@ export function AdminConsole({ tab }: { tab: string }) {
     return (
       <div className="card" style={{ padding: 40, textAlign: "center" }}>
         <div style={{ fontSize: 34, marginBottom: 10 }}>🔒</div>
-        <h2>운영자 전용</h2>
-        <p style={{ color: "var(--muted)", marginTop: 8 }}>운영진 권한이 있는 계정만 접근할 수 있습니다.</p>
+        <h2>부마스터 전용</h2>
+        <p style={{ color: "var(--muted)", marginTop: 8 }}>부마스터 또는 길드 마스터만 접근할 수 있습니다.</p>
       </div>
     );
   }

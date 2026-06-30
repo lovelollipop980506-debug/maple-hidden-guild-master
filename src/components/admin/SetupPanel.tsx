@@ -84,7 +84,7 @@ export function SetupPanel() {
       <div className="panel-head">
         <div>
           <h2>설정</h2>
-          <p>봇을 연동 서버에 초대하고, 어떤 디스코드 역할이 운영진인지 지정합니다.</p>
+          <p>봇을 연동 서버에 초대하고, 어떤 디스코드 역할이 부마스터인지 지정합니다.</p>
         </div>
       </div>
 
@@ -114,10 +114,10 @@ export function SetupPanel() {
 
       <div className="card" style={{ padding: 20 }}>
         <div className="form-section-title" style={{ marginBottom: 6 }}>
-          운영진 역할
+          부마스터 역할
         </div>
         <p className="tiny" style={{ marginBottom: 14 }}>
-          체크한 역할 = 운영진(가입·인증 승인, 길드원 조회). 체크 안 한 역할은 일반 멤버. 서버 소유자는 자동으로 관리자입니다.
+          체크한 역할 = 부마스터(가입·인증 승인, 길드원 조회). 체크 안 한 역할은 일반 멤버. 서버 소유자는 자동으로 길드 마스터입니다.
         </p>
         {data.roles.length === 0 ? (
           <div className="empty" style={{ height: "auto", padding: "18px 0" }}>

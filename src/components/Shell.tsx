@@ -67,7 +67,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         {isOp && (
           <>
             <div className="side-line" />
-            <div className="nav-label">관리자</div>
+            <div className="nav-label">운영</div>
             <div className="nav">
               {ADMIN.map((n) => (
                 <NavBtn key={n.href} {...n} />

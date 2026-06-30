@@ -93,7 +93,7 @@ export default function HomePage() {
               <b>{cur ? cur.title : "등록된 공지가 없습니다."}</b>
               <span className="notice-date">{cur ? fmtNoticeDate(cur.notice_date) : ""}</span>
             </div>
-            <div className="notice-body">{cur ? cur.body : "관리자 공지 관리에서 공지사항을 등록하세요."}</div>
+            <div className="notice-body">{cur ? cur.body : "공지 관리에서 공지사항을 등록하세요."}</div>
           </div>
           <button className="more" onClick={() => router.push("/notices")}>
             전체 보기
@@ -107,7 +107,7 @@ export default function HomePage() {
           </div>
           <div className="home-action">
             <h3>길드원 조회</h3>
-            <p>길드원 정보와 세부 능력치는 운영자 전용입니다. 운영자 로그인 후 조회할 수 있습니다.</p>
+            <p>길드원 정보와 세부 능력치는 부마스터 전용입니다. 부마스터 로그인 후 조회할 수 있습니다.</p>
             <button onClick={() => router.push("/admin/directory")}>길드원 조회 →</button>
           </div>
         </div>

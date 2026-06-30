@@ -27,8 +27,8 @@ export const STATUS_LABELS: Record<string, string> = {
 };
 
 export const TIER_LABELS: Record<string, string> = {
-  admin: "관리자",
-  reviewer: "운영자",
+  admin: "길드 마스터",
+  reviewer: "부마스터",
   member: "멤버",
   guest: "게스트",
 };
