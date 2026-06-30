@@ -207,6 +207,26 @@ export async function getGuildMembers(guildId: string, limit = 1000): Promise<Gu
   }));
 }
 
+export type UserGuild = { id: string; name: string; owner: boolean; permissions: string };
+
+/** Guilds the *user* is in, with their permissions (OAuth `guilds` scope). */
+export async function getUserGuilds(accessToken: string): Promise<UserGuild[]> {
+  const res = await fetch(`${API}/users/@me/guilds`, { headers: { Authorization: `Bearer ${accessToken}` } });
+  if (!res.ok) return [];
+  return (await res.json()) as UserGuild[];
+}
+
+// View Channels + Send Messages + Read Message History + Manage Roles
+export const BOT_INVITE_PERMISSIONS = "268504064";
+
+/** OAuth2 bot invite URL. `guildId` pre-selects (and locks) the target server. */
+export function botInviteUrl(guildId?: string): string {
+  const base =
+    `https://discord.com/oauth2/authorize?client_id=${env.discord.clientId}` +
+    `&permissions=${BOT_INVITE_PERMISSIONS}&scope=bot+applications.commands`;
+  return guildId ? `${base}&guild_id=${guildId}&disable_guild_select=true` : base;
+}
+
 export type DiscordMessage = {
   id: string;
   channel_id: string;

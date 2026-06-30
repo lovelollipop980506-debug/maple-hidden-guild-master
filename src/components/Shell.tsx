@@ -9,6 +9,7 @@ const MAIN = [
   { href: "/", label: "홈" },
   { href: "/cert", label: "길드 스킬 인증" },
   { href: "/notices", label: "공지사항" },
+  { href: "/invite", label: "봇 초대" },
 ];
 const ADMIN = [
   { href: "/admin/applications", label: "가입 신청", badge: "apps" },

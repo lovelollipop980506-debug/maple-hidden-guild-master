@@ -84,6 +84,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.tier = tier;
         token.roles = roles;
         token.isOwner = isAdminByDiscord;
+        token.accessToken = account.access_token;
       }
       return token;
     },
@@ -92,6 +93,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       session.user.tier = (token.tier as Tier) ?? "guest";
       session.user.roles = (token.roles as string[]) ?? [];
       session.user.isOwner = (token.isOwner as boolean) ?? false;
+      session.accessToken = token.accessToken as string | undefined;
       return session;
     },
   },
