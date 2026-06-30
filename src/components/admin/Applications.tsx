@@ -2,7 +2,6 @@
 import { useApi, mutate } from "@/lib/client/useApi";
 import { apiPost, ApiError } from "@/lib/client/api";
 import { toast } from "@/lib/client/toast";
-import { ROUTE_LABELS } from "@/lib/client/maple";
 import { Loading } from "@/components/Loading";
 import type { ListResult, ReviewSubmission } from "@/lib/client/types";
 
@@ -43,17 +42,19 @@ export function Applications() {
               <th>신청일</th>
               <th>디스코드</th>
               <th>닉네임</th>
-              <th>직업</th>
               <th>레벨</th>
-              <th>가입 경로</th>
-              <th>각오</th>
+              <th>직업</th>
+              <th>스공</th>
+              <th>보공</th>
+              <th>방무</th>
+              <th>접속 시간대</th>
               <th>관리</th>
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={8} className="empty">
+                <td colSpan={10} className="empty">
                   접수된 가입 신청이 없습니다.
                 </td>
               </tr>
@@ -64,17 +65,17 @@ export function Applications() {
                   <tr key={r.id}>
                     <td>{fmt(r.created_at)}</td>
                     <td>
-                      <span className="discord-tag">{a.discord || "-"}</span>
+                      <span className="discord-tag">{r.user?.global_name || r.user?.username || "-"}</span>
                     </td>
                     <td>
                       <b>{a.nick}</b>
                     </td>
-                    <td>{a.job || "-"}</td>
                     <td>{a.level ?? "-"}</td>
-                    <td>{ROUTE_LABELS[a.route] || a.route || "-"}</td>
-                    <td className="app-intro" title={a.intro || ""}>
-                      {a.intro || "-"}
-                    </td>
+                    <td>{a.job || "-"}</td>
+                    <td>{a.stat_attack ?? "-"}</td>
+                    <td>{a.boss ?? "-"}</td>
+                    <td>{a.ignore ?? "-"}</td>
+                    <td>{a.playtime || "-"}</td>
                     <td>
                       {r.status === "pending" ? (
                         <div className="admin-actions">
