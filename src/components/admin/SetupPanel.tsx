@@ -66,6 +66,19 @@ export function SetupPanel() {
     }
   }
 
+  // 봇 상태 뱃지 / 액션 링크 공통 pill — 높이·패딩 일관.
+  const pill = {
+    display: "inline-flex",
+    alignItems: "center",
+    height: 42,
+    padding: "0 16px",
+    borderRadius: 7,
+    fontWeight: 700,
+    fontSize: 14,
+    whiteSpace: "nowrap",
+    textDecoration: "none",
+  } as const;
+
   return (
     <div className="panel active">
       <div className="panel-head">
@@ -76,27 +89,25 @@ export function SetupPanel() {
       </div>
 
       <div className="card" style={{ padding: 20, marginBottom: 14 }}>
-        <div className="field" style={{ maxWidth: 520 }}>
-          <label>연동 서버</label>
+        <div className="form-section-title">연동 서버</div>
+        <div className="field">
           <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-            <select value={data.guild.id} onChange={(e) => setGuildId(e.target.value)} style={{ flex: 1, minWidth: 220 }}>
+            <select value={data.guild.id} onChange={(e) => setGuildId(e.target.value)} style={{ flex: 1, minWidth: 240 }}>
               {data.manageableGuilds.map((g) => (
                 <option key={g.id} value={g.id}>
                   {g.name} ({g.id})
                 </option>
               ))}
             </select>
-            {data.botPresent ? (
-              <span className="badge ok">봇 초대됨</span>
-            ) : (
-              <span className="badge no">봇 초대 필요</span>
-            )}
-            <a className="small-btn edit" href={data.inviteUrl} target="_blank" rel="noreferrer">
+            <span style={{ ...pill, ...(data.botPresent ? { background: "#dff5e8", color: "#13a658" } : { background: "#ffe7e9", color: "#f2394a" }) }}>
+              {data.botPresent ? "봇 초대됨" : "봇 초대 필요"}
+            </span>
+            <a style={{ ...pill, background: "#eaf3ff", color: "#2174d8" }} href={data.inviteUrl} target="_blank" rel="noreferrer">
               {data.botPresent ? "권한 갱신" : "봇 초대"}
             </a>
           </div>
           {data.setupCompleted && (
-            <div className="tiny">현재 저장된 서버를 다른 서버로 바꿔 저장할 수 있습니다.</div>
+            <div className="tiny" style={{ marginTop: 8 }}>현재 저장된 서버를 다른 서버로 바꿔 저장할 수 있습니다.</div>
           )}
         </div>
       </div>
