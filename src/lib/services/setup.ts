@@ -1,5 +1,5 @@
 import { getConfig, saveConfig } from "@/lib/config";
-import { getManageableGuilds, listGuildChannels, listGuildRoles } from "@/lib/discord";
+import { getManageableGuilds, listGuildChannels, listGuildRoles, botInviteUrl } from "@/lib/discord";
 import { suggestTier } from "@/lib/permissions";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { ApiError } from "@/lib/api/respond";
@@ -33,6 +33,7 @@ export async function getSetupOptions(userId: string, selectedGuildId?: string) 
     setupCompleted: config.setupCompleted,
     manageableGuilds: manageable,
     guild,
+    inviteUrl: botInviteUrl(guild.id), // 연동 서버 한정 (재)초대 링크 — 봇 권한/스코프 업데이트용
     channels,
     roles: roleOptions,
     config: { notifyChannelId: config.notifyChannelId },

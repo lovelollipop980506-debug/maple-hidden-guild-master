@@ -9,16 +9,10 @@ type SetupOptions = {
   setupCompleted: boolean;
   manageableGuilds: { id: string; name: string }[];
   guild: { id: string; name: string };
+  inviteUrl: string;
   channels: { id: string; name: string }[];
   roles: { id: string; name: string; suggestedTier: string }[];
   config: { notifyChannelId: string | null };
-};
-
-type InviteInfo = {
-  clientId: string;
-  genericInviteUrl: string;
-  needsRelogin: boolean;
-  targets: { id: string; name: string; botPresent: boolean; inviteUrl: string }[];
 };
 
 const TIER_OPTS = [
@@ -32,7 +26,6 @@ export function SetupPanel() {
   const [guildId, setGuildId] = useState("");
   const path = `/api/v1/setup/options${guildId ? `?guildId=${guildId}` : ""}`;
   const { data, loading, error } = useApi<SetupOptions>(path);
-  const { data: invite } = useApi<InviteInfo>("/api/v1/discord/invite");
   const [map, setMap] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
 
@@ -81,33 +74,14 @@ export function SetupPanel() {
         <div className="form-section-title" style={{ marginBottom: 14 }}>
           봇 초대
         </div>
-        {invite?.needsRelogin ? (
-          <p style={{ color: "var(--muted)" }}>초대 가능한 서버를 보려면 다시 로그인이 필요합니다.</p>
-        ) : !invite?.targets.length ? (
-          <p style={{ color: "var(--muted)" }}>
-            관리 권한이 있는 서버가 없습니다.{" "}
-            {invite && (
-              <a href={invite.genericInviteUrl} target="_blank" rel="noreferrer" className="discord-tag">
-                서버 직접 선택해 초대 →
-              </a>
-            )}
-          </p>
-        ) : (
-          <div style={{ display: "grid", gap: 8 }}>
-            {invite.targets.map((t) => (
-              <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <b style={{ minWidth: 160 }}>{t.name}</b>
-                {t.botPresent ? (
-                  <span className="badge ok">초대됨</span>
-                ) : (
-                  <a className="small-btn approve" href={t.inviteUrl} target="_blank" rel="noreferrer">
-                    봇 초대하기
-                  </a>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <span style={{ color: "var(--muted)" }}>
+            연동 서버 <b>{data.guild.name}</b> 에 봇을 초대하거나, 권한·스코프를 갱신하려면 재초대하세요.
+          </span>
+          <a className="small-btn approve" href={data.inviteUrl} target="_blank" rel="noreferrer">
+            봇 초대 / 권한 갱신
+          </a>
+        </div>
       </div>
 
       <div className="card" style={{ padding: 20, marginBottom: 14 }}>
