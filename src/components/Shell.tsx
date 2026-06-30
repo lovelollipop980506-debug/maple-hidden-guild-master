@@ -1,4 +1,5 @@
 "use client";
+import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { useMe } from "@/lib/client/useMe";
@@ -28,6 +29,12 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const isOp = tierAtLeast(me?.tier, "reviewer");
   const active = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
 
+  // 길드원(역할 보유)이 아니면(=guest) 가입 신청 페이지로 보낸다.
+  const isMember = tierAtLeast(me?.tier, "member");
+  useEffect(() => {
+    if (me && !isMember) router.replace("/join");
+  }, [me, isMember, router]);
+
   function NavBtn({ href, label, badge }: { href: string; label: string; badge?: string }) {
     const count = badge === "apps" ? stats?.pendingApplications : badge === "certs" ? stats?.pendingCerts : 0;
     return (
@@ -38,9 +45,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // 인증이 확정될 때까지(로딩 중이거나 미인증→로그인 리다이렉트 중) 쉘을 그리지 않고
-  // 스피너만 보여준다. me 가 있어야만 쉘 렌더 → 쉘 깜빡임 후 로그인 튕김 방지.
-  if (!me) {
+  // 인증 확정 전(로딩·미인증) 또는 비멤버(→가입 신청 리다이렉트 중)에는 쉘을 그리지
+  // 않고 스피너만. 멤버 이상일 때만 쉘 렌더 → 깜빡임/비멤버 노출 방지.
+  if (!me || !isMember) {
     return <Loading />;
   }
 
