@@ -9,6 +9,7 @@ import { toast } from "@/lib/client/toast";
 import { STATUS_LABELS } from "@/lib/client/maple";
 import { tierAtLeast, type MySubmission } from "@/lib/client/types";
 import { Loading } from "@/components/Loading";
+import { BootstrapGate } from "@/components/BootstrapGate";
 
 function fmtDate(iso: string) {
   const d = new Date(iso);
@@ -90,6 +91,7 @@ export default function JoinPage() {
   }
 
   return (
+    <BootstrapGate>
     <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 24, background: "var(--bg)" }}>
       <div className="card" style={{ width: "100%", maxWidth: 560, padding: 28 }}>
         <div className="page-head" style={{ marginBottom: 18 }}>
@@ -212,5 +214,6 @@ export default function JoinPage() {
         )}
       </div>
     </div>
+    </BootstrapGate>
   );
 }
