@@ -1,5 +1,5 @@
 "use client";
-import { useApi } from "@/lib/client/useApi";
+import { useApi, mutate } from "@/lib/client/useApi";
 import { apiPost, ApiError } from "@/lib/client/api";
 import { toast } from "@/lib/client/toast";
 import { SKILL_LABELS } from "@/lib/client/maple";
@@ -23,6 +23,7 @@ export function Pending() {
       await apiPost(`/api/v1/submissions/${id}/review`, { decision });
       toast(decision === "approved" ? "승인 완료" : "거절 처리 완료");
       reload();
+      mutate("/api/v1/stats");
     } catch (e) {
       toast((e as ApiError).message);
     }

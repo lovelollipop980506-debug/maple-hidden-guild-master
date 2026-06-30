@@ -1,5 +1,5 @@
 "use client";
-import { useApi } from "@/lib/client/useApi";
+import { useApi, mutate } from "@/lib/client/useApi";
 import { apiPost, ApiError } from "@/lib/client/api";
 import { toast } from "@/lib/client/toast";
 import { ROUTE_LABELS } from "@/lib/client/maple";
@@ -22,6 +22,7 @@ export function Applications() {
       await apiPost(`/api/v1/submissions/${id}/review`, { decision });
       toast(decision === "approved" ? "가입 승인했습니다" : "가입 신청을 반려했습니다");
       reload();
+      mutate("/api/v1/stats");
     } catch (e) {
       toast((e as ApiError).message);
     }
