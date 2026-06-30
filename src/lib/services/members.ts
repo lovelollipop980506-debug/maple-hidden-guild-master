@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { getConfig, setWeeklyResetAt } from "@/lib/config";
+import { getGuildMembers, getGuildRoles } from "@/lib/discord";
 import { ApiError } from "@/lib/api/respond";
 
 /**
@@ -144,6 +145,54 @@ export async function registerMember(nick: string, attributes: any) {
   const { data: existing } = await db.from("members").select("id").eq("nick", nick).maybeSingle();
   if (existing) return;
   await db.from("members").insert({ nick, attributes });
+}
+
+/**
+ * 디스코드 길드 멤버를 로스터로 동기화.
+ * - 닉 = 서버 닉네임(없으면 디코 이름). 기존 닉이면 디코 정보만 갱신(메이플 스탯 보존).
+ * - attributes.discordId / avatar / discordRoles(역할 이름) 저장.
+ */
+export async function syncFromDiscord(by: string) {
+  const config = await getConfig();
+  if (!config.guildId) throw new ApiError("invalid", "먼저 설정에서 서버를 저장하세요.", 400);
+
+  const [dMembers, guildRoles] = await Promise.all([
+    getGuildMembers(config.guildId),
+    getGuildRoles(config.guildId),
+  ]);
+  if (!dMembers.length) {
+    throw new ApiError(
+      "discord",
+      "멤버를 가져오지 못했습니다. 봇 설정에서 Server Members Intent가 켜져 있는지 확인하세요.",
+      400,
+    );
+  }
+  const roleName = new Map(guildRoles.map((r) => [r.id, r.name]));
+
+  const db = supabaseAdmin();
+  const { data: existing } = await db.from("members").select("id, nick, attributes");
+  const byNick = new Map((existing ?? []).map((m: any) => [m.nick, m]));
+
+  let created = 0;
+  let updated = 0;
+  for (const dm of dMembers) {
+    if (dm.bot) continue;
+    const discordRoles = dm.roleIds
+      .map((id) => roleName.get(id))
+      .filter((n): n is string => !!n && n !== "@everyone");
+    const ex = byNick.get(dm.nick);
+    if (ex) {
+      const attrs = { ...(ex.attributes ?? {}), discordId: dm.discordId, avatar: dm.avatar, discordRoles };
+      await db.from("members").update({ attributes: attrs, updated_at: new Date().toISOString() }).eq("id", ex.id);
+      updated++;
+    } else {
+      await db
+        .from("members")
+        .insert({ nick: dm.nick, attributes: { rank: "일반길드원", discordId: dm.discordId, avatar: dm.avatar, discordRoles }, created_by: by });
+      created++;
+    }
+  }
+  return { created, updated, total: created + updated };
 }
 
 /** 인증 승인 시 멤버 길드 스킬 증가. */

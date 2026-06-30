@@ -177,6 +177,36 @@ export async function listGuildRoles(guildId: string): Promise<GuildRole[]> {
     .sort((a, b) => b.position - a.position);
 }
 
+export type GuildMemberRaw = {
+  discordId: string;
+  nick: string;
+  avatar: string | null;
+  roleIds: string[];
+  bot: boolean;
+};
+
+/**
+ * List a guild's members. Requires the bot's **Server Members Intent** (privileged)
+ * — without it Discord returns 403. Returns up to `limit` (Discord max 1000).
+ */
+export async function getGuildMembers(guildId: string, limit = 1000): Promise<GuildMemberRaw[]> {
+  if (!guildId) return [];
+  const res = await botFetch(`/guilds/${guildId}/members?limit=${limit}`);
+  if (!res.ok) return [];
+  const data = (await res.json()) as Array<{
+    user: { id: string; username: string; global_name?: string | null; avatar?: string | null; bot?: boolean };
+    nick?: string | null;
+    roles: string[];
+  }>;
+  return data.map((m) => ({
+    discordId: m.user.id,
+    nick: m.nick || m.user.global_name || m.user.username,
+    avatar: m.user.avatar ? `https://cdn.discordapp.com/avatars/${m.user.id}/${m.user.avatar}.png` : null,
+    roleIds: m.roles ?? [],
+    bot: !!m.user.bot,
+  }));
+}
+
 export type DiscordMessage = {
   id: string;
   channel_id: string;

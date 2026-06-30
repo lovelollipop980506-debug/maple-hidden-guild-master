@@ -1,39 +1,25 @@
 import { getConfig, saveConfig } from "@/lib/config";
-import {
-  getBotGuilds,
-  getManageableGuilds,
-  canManageGuild,
-  listGuildChannels,
-  listGuildRoles,
-} from "@/lib/discord";
+import { getManageableGuilds, listGuildChannels, listGuildRoles } from "@/lib/discord";
 import { suggestTier } from "@/lib/permissions";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { ApiError } from "@/lib/api/respond";
 
-/** Resolve the target guild for setup + authorize the user (owner/Manage Server). */
-async function resolveTargetGuild(userId: string) {
-  const config = await getConfig();
-  if (config.setupCompleted) {
-    if (!(await canManageGuild(config.guildId, userId))) {
-      throw new ApiError("forbidden", "설정 권한이 없습니다.", 403);
-    }
-    const botGuilds = await getBotGuilds();
-    const guild =
-      botGuilds.find((g) => g.id === config.guildId) ?? { id: config.guildId, name: config.guildId };
-    return { config, guild };
-  }
+/**
+ * Setup options — supports switching between any guild the user owns/manages.
+ * `selectedGuildId` picks which guild's channels/roles to return.
+ */
+export async function getSetupOptions(userId: string, selectedGuildId?: string) {
   const manageable = await getManageableGuilds(userId);
   if (!manageable.length) {
     throw new ApiError("forbidden", "서버 소유자 또는 서버 관리 권한자만 설정할 수 있습니다.", 403);
   }
-  return { config, guild: manageable[0] };
-}
+  const config = await getConfig();
 
-/** Data the setup UI needs: guild, channels (notify), roles (+suggested tier), current config. */
-export async function getSetupOptions(userId: string) {
-  const { config, guild } = await resolveTargetGuild(userId);
+  let targetId = selectedGuildId && manageable.find((g) => g.id === selectedGuildId)?.id;
+  if (!targetId) targetId = manageable.find((g) => g.id === config.guildId)?.id ?? manageable[0].id;
+  const guild = manageable.find((g) => g.id === targetId)!;
+
   const [channels, roles] = await Promise.all([listGuildChannels(guild.id), listGuildRoles(guild.id)]);
-
   const roleOptions = roles.map((r) => {
     let tier: "admin" | "reviewer" | "member" | "none" = "none";
     if (config.adminRoleIds.includes(r.id)) tier = "admin";
@@ -45,6 +31,7 @@ export async function getSetupOptions(userId: string) {
 
   return {
     setupCompleted: config.setupCompleted,
+    manageableGuilds: manageable,
     guild,
     channels,
     roles: roleOptions,
@@ -62,14 +49,10 @@ export async function saveSetup(userId: string, input: SetupInput) {
   const guildId = (input.guildId ?? "").trim();
   if (!guildId) throw new ApiError("invalid", "서버 ID가 필요합니다.");
 
-  const config = await getConfig();
-  if (config.setupCompleted) {
-    if (!(await canManageGuild(guildId, userId))) throw new ApiError("forbidden", "권한이 없습니다.", 403);
-  } else {
-    const manageable = await getManageableGuilds(userId);
-    if (!manageable.some((g) => g.id === guildId)) {
-      throw new ApiError("forbidden", "서버 소유자 또는 서버 관리 권한자만 설정할 수 있습니다.", 403);
-    }
+  const manageable = await getManageableGuilds(userId);
+  const target = manageable.find((g) => g.id === guildId);
+  if (!target) {
+    throw new ApiError("forbidden", "서버 소유자 또는 서버 관리 권한자만 설정할 수 있습니다.", 403);
   }
 
   const adminRoleIds: string[] = [];
@@ -81,11 +64,15 @@ export async function saveSetup(userId: string, input: SetupInput) {
     else if (tier === "member") memberRoleIds.push(roleId);
   }
 
-  const botGuilds = await getBotGuilds();
-  const guildName = botGuilds.find((g) => g.id === guildId)?.name ?? "";
-
   const { error } = await saveConfig(
-    { guildId, guildName, notifyChannelId: input.notifyChannelId ?? "", adminRoleIds, reviewerRoleIds, memberRoleIds },
+    {
+      guildId,
+      guildName: target.name,
+      notifyChannelId: input.notifyChannelId ?? "",
+      adminRoleIds,
+      reviewerRoleIds,
+      memberRoleIds,
+    },
     userId,
     true,
   );

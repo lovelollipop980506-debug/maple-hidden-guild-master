@@ -45,6 +45,16 @@ export function Members() {
   const [draft, setDraft] = useState<Draft | null>(null);
   const [busy, setBusy] = useState(false);
 
+  async function sync() {
+    try {
+      const r = await apiPost<{ created: number; updated: number }>("/api/v1/members/sync");
+      toast(`디스코드 동기화 완료 — 추가 ${r.created}, 갱신 ${r.updated}`);
+      reload();
+    } catch (e) {
+      toast((e as ApiError).message);
+    }
+  }
+
   async function reset(scope: "weekly" | "all") {
     const msg =
       scope === "weekly"
@@ -106,6 +116,9 @@ export function Members() {
           <p>멤버 정보와 길드 스킬을 수정하고 인증 현황을 초기화할 수 있습니다.</p>
         </div>
         <div className="reset-actions">
+          <button className="reset-btn" style={{ borderColor: "#cddff5", background: "#eef6ff", color: "#246fc8" }} onClick={sync}>
+            ⟳ 디스코드 멤버 동기화
+          </button>
           <button className="reset-btn week" onClick={() => reset("weekly")}>
             이번 주 인증 초기화
           </button>

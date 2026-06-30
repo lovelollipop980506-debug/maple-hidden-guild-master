@@ -1,7 +1,7 @@
 import NextAuth from "next-auth";
 import Discord from "next-auth/providers/discord";
 import { env } from "@/lib/env";
-import { getGuildMemberRoles, getGuildOwnerId, getGuildRoles } from "@/lib/discord";
+import { getGuildMemberRoles, getGuildOwnerId, getGuildRoles, getManageableGuilds } from "@/lib/discord";
 import { getConfig } from "@/lib/config";
 import { computePermissions, hasAdmin } from "@/lib/permissions";
 import { resolveTier, type Tier } from "@/lib/rbac";
@@ -33,15 +33,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const discordId = profile.id as string;
         const config = await getConfig();
 
-        // Role/permission resolution only possible once a guild is configured (post-setup).
+        // 운영 길드 결정: 설정된 guildId. 설정 전(부트스트랩)이면 사용자가 소유/관리하는
+        // 봇 길드를 자동 감지 → 소유자/Administrator 가 setup 없이도 admin 으로 진입.
+        let guildId = config.guildId;
+        if (!guildId) {
+          const manageable = await getManageableGuilds(discordId);
+          if (manageable.length) guildId = manageable[0].id;
+        }
+
         let roles: string[] = [];
         let isAdminByDiscord = false; // owner or Administrator permission
-        if (config.guildId) {
-          roles = await getGuildMemberRoles(account.access_token, config.guildId);
-          const ownerId = await getGuildOwnerId(config.guildId);
+        if (guildId) {
+          roles = await getGuildMemberRoles(account.access_token, guildId);
+          const ownerId = await getGuildOwnerId(guildId);
           const isOwner = !!ownerId && ownerId === discordId;
-          const guildRoles = await getGuildRoles(config.guildId);
-          isAdminByDiscord = hasAdmin(computePermissions(roles, guildRoles, config.guildId, isOwner));
+          const guildRoles = await getGuildRoles(guildId);
+          isAdminByDiscord = hasAdmin(computePermissions(roles, guildRoles, guildId, isOwner));
         }
         const tier = resolveTier(
           roles,

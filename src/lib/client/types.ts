@@ -54,6 +54,10 @@ export interface MemberAttributes {
   power?: number;
   joinDate?: string;
   skills?: { boss?: number; ignore?: number; attack?: number; exp?: number; accuracy?: number };
+  // 디스코드 동기화 필드
+  discordId?: string;
+  avatar?: string | null;
+  discordRoles?: string[];
 }
 
 export interface Member {

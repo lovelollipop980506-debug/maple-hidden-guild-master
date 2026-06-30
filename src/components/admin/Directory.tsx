@@ -109,7 +109,19 @@ export function Directory() {
                         <td colSpan={7}>
                           <div className="member-detail">
                             <div>
-                              <div className="detail-title">능력치</div>
+                              <div className="detail-title" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                {a.avatar && (
+                                  /* eslint-disable-next-line @next/next/no-img-element */
+                                  <img
+                                    src={a.avatar}
+                                    alt=""
+                                    width={28}
+                                    height={28}
+                                    style={{ borderRadius: "50%" }}
+                                  />
+                                )}
+                                능력치
+                              </div>
                               <div className="ability-list">
                                 <div className="ability-line">
                                   <span>보스 공격력</span>
@@ -124,6 +136,18 @@ export function Directory() {
                                   <b>{a.power ? a.power.toLocaleString() + "만" : "-"}</b>
                                 </div>
                               </div>
+                              {!!a.discordRoles?.length && (
+                                <div style={{ marginTop: 14 }}>
+                                  <div className="detail-title">디스코드 역할</div>
+                                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                                    {a.discordRoles.map((r) => (
+                                      <span key={r} className="badge role">
+                                        {r}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
                             </div>
                             <div>
                               <div className="detail-title">길드 스킬</div>

@@ -6,6 +6,7 @@ import { toast } from "@/lib/client/toast";
 
 type SetupOptions = {
   setupCompleted: boolean;
+  manageableGuilds: { id: string; name: string }[];
   guild: { id: string; name: string };
   channels: { id: string; name: string }[];
   roles: { id: string; name: string; suggestedTier: string }[];
@@ -20,18 +21,21 @@ const TIER_OPTS = [
 ];
 
 export function SetupPanel() {
-  const { data, loading, error } = useApi<SetupOptions>("/api/v1/setup/options");
+  const [guildId, setGuildId] = useState("");
+  const path = `/api/v1/setup/options${guildId ? `?guildId=${guildId}` : ""}`;
+  const { data, loading, error } = useApi<SetupOptions>(path);
   const [notify, setNotify] = useState("");
   const [map, setMap] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (!data) return;
+    if (!guildId) setGuildId(data.guild.id);
     setNotify(data.config.notifyChannelId || "");
     setMap(Object.fromEntries(data.roles.map((r) => [r.id, r.suggestedTier])));
-  }, [data]);
+  }, [data, guildId]);
 
-  if (loading) return <div className="panel active card empty">불러오는 중…</div>;
+  if (loading && !data) return <div className="panel active card empty">불러오는 중…</div>;
   if (error || !data) {
     return (
       <div className="panel active">
@@ -62,17 +66,23 @@ export function SetupPanel() {
       <div className="panel-head">
         <div>
           <h2>설정</h2>
-          <p>감지된 서버의 알림 채널과 역할 → 등급 매핑을 설정합니다.</p>
+          <p>연동할 서버를 선택하고, 알림 채널과 역할 → 등급 매핑을 설정합니다.</p>
         </div>
       </div>
 
       <div className="card" style={{ padding: 20, marginBottom: 14 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <b style={{ fontSize: 16 }}>{data.guild.name}</b>
-          <span style={{ fontSize: 12, color: "var(--muted)" }}>ID {data.guild.id}</span>
-          <span className="badge ok" style={{ marginLeft: "auto" }}>
-            연결됨
-          </span>
+        <div className="field" style={{ maxWidth: 420 }}>
+          <label>연동 서버</label>
+          <select value={data.guild.id} onChange={(e) => setGuildId(e.target.value)}>
+            {data.manageableGuilds.map((g) => (
+              <option key={g.id} value={g.id}>
+                {g.name} ({g.id})
+              </option>
+            ))}
+          </select>
+          {data.setupCompleted && (
+            <div className="tiny">현재 저장된 서버를 다른 서버로 바꿔 저장할 수 있습니다.</div>
+          )}
         </div>
       </div>
 
@@ -98,7 +108,11 @@ export function SetupPanel() {
           {data.roles.map((r) => (
             <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <span style={{ minWidth: 140, fontWeight: 700 }}>{r.name}</span>
-              <select value={map[r.id] ?? "none"} onChange={(e) => setMap({ ...map, [r.id]: e.target.value })} style={{ height: 40, borderRadius: 7, border: "1px solid var(--line)", padding: "0 10px" }}>
+              <select
+                value={map[r.id] ?? "none"}
+                onChange={(e) => setMap({ ...map, [r.id]: e.target.value })}
+                style={{ height: 40, borderRadius: 7, border: "1px solid var(--line)", padding: "0 10px" }}
+              >
                 {TIER_OPTS.map((o) => (
                   <option key={o.value} value={o.value}>
                     {o.label}
