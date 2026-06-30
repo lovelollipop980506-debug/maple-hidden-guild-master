@@ -69,6 +69,12 @@ export async function listMembers(opts: { q?: string; rank?: string; cert?: stri
   return { items, total: items.length };
 }
 
+/** 닉네임 목록만 (인증 페이지 선택용; 상세 노출 없음). */
+export async function listMemberNicks(): Promise<string[]> {
+  const { data } = await supabaseAdmin().from("members").select("nick").order("nick", { ascending: true });
+  return (data ?? []).map((m: any) => m.nick);
+}
+
 export async function getMember(id: string) {
   const { data } = await supabaseAdmin().from("members").select("*").eq("id", id).maybeSingle();
   if (!data) throw new ApiError("not_found", "멤버를 찾을 수 없습니다.", 404);

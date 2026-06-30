@@ -57,6 +57,7 @@ export const CAPABILITIES = {
   "forms.view": "guest", // list/get form definitions
   "submissions.submit": "guest", // login gate; per-form min tier enforced in service
   "submissions.mine": "guest",
+  "members.nicks": "member", // 인증 페이지 닉 선택용 (닉만)
   // 운영(operator) 이상
   "submissions.review": "reviewer", // 인증/가입 승인·반려, 검토 큐 (인증 대기/승인 로그 포함)
   "members.view": "reviewer", // 길드원 조회(관리자 전용)
