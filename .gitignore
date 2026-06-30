@@ -30,3 +30,6 @@ yarn-error.log*
 
 # supabase CLI temp
 supabase/.temp/
+
+# 납품 전 데이터 백업 (사용자 데이터 포함 — 절대 커밋 금지)
+backups/
