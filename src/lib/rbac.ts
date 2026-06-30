@@ -52,15 +52,19 @@ export const CAPABILITIES = {
   "me.read": "guest", // any logged-in user
   "me.update": "guest", // edit own profile
   "config.read": "guest",
+  "stats.view": "guest", // 홈 길드 요약 (로그인하면 누구나)
+  "notices.view": "guest", // 공지 보기
   "forms.view": "guest", // list/get form definitions
-  "forms.manage": "admin", // create/edit/delete forms (form builder)
   "submissions.submit": "guest", // login gate; per-form min tier enforced in service
   "submissions.mine": "guest",
-  "submissions.review": "reviewer", // approve/reject + view all submissions (incl. discord)
-  "members.view": "reviewer",
-  "members.adjustPoints": "admin",
-  "stats.view": "reviewer",
-  "discord.meta": "reviewer", // list guild channels/roles (form builder helpers)
+  // 운영(operator) 이상
+  "submissions.review": "reviewer", // 인증/가입 승인·반려, 검토 큐 (인증 대기/승인 로그 포함)
+  "members.view": "reviewer", // 길드원 조회(관리자 전용)
+  "members.manage": "reviewer", // 멤버 추가/수정/삭제/초기화
+  "notices.manage": "reviewer", // 공지 관리
+  "discord.meta": "reviewer",
+  // 관리자
+  "forms.manage": "admin", // 폼 빌더
 } as const;
 
 export type Capability = keyof typeof CAPABILITIES;

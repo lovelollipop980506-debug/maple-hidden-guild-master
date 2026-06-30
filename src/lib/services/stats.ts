@@ -1,53 +1,37 @@
 import { supabaseAdmin } from "@/lib/supabase/server";
+import { listMembers } from "@/lib/services/members";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-type Filter = (q: any) => any;
-
-async function count(table: string, filter?: Filter) {
+async function count(table: string, filter?: (q: any) => any) {
   let q = supabaseAdmin().from(table).select("*", { count: "exact", head: true });
   if (filter) q = filter(q);
   const { count } = await q;
   return count ?? 0;
 }
 
+/** 길드 요약 — 홈 + 관리자. 멤버 로스터/인증에서 파생. */
 export async function getStats() {
-  const db = supabaseAdmin();
-  const [
-    totalMembers,
-    approvedMembers,
-    pendingSubmissions,
-    totalSubmissions,
-    subsApproved,
-    subsRejected,
-    activeForms,
-    topRows,
-    ledgerRows,
-  ] = await Promise.all([
-    count("users"),
-    count("users", (q) => q.eq("member_status", "approved")),
-    count("form_submissions", (q) => q.eq("status", "pending")),
-    count("form_submissions"),
-    count("form_submissions", (q) => q.eq("status", "approved")),
-    count("form_submissions", (q) => q.eq("status", "rejected")),
-    count("forms", (q) => q.eq("active", true)),
-    db.from("users").select("username, global_name, total_points").order("total_points", { ascending: false }).limit(5),
-    db.from("point_ledger").select("delta"),
+  const [{ items: members }, pendingApplications, pendingCerts, activeNotices] = await Promise.all([
+    listMembers(),
+    count("form_submissions", (q) => q.eq("form_key", "join").eq("status", "pending")),
+    count("form_submissions", (q) => q.eq("form_key", "skill_cert").eq("status", "pending")),
+    count("notices", (q) => q.eq("active", true)),
   ]);
 
-  const topPoints = (topRows.data ?? []).map((u) => ({
-    name: u.global_name || u.username,
-    points: u.total_points,
-  }));
-  const totalPointsAwarded = (ledgerRows.data ?? []).reduce((s, r) => s + (r.delta as number), 0);
+  const totalMembers = members.length;
+  const totalSkillUps = members.reduce((a, m) => a + (m.totalSkills || 0), 0);
+  const weeklyAdded = members.reduce((a, m) => a + (m.weekCount || 0), 0);
+  const weeklyDone = members.filter((m) => (m.weekCount || 0) > 0).length;
 
   return {
     totalMembers,
-    approvedMembers,
-    activeForms,
-    pendingSubmissions,
-    totalSubmissions,
-    totalPointsAwarded,
-    topPoints,
-    submissionStatus: { approved: subsApproved, rejected: subsRejected, pending: pendingSubmissions },
+    totalSkillUps,
+    weeklyAdded,
+    weeklyDone,
+    weeklyTotal: totalMembers,
+    weeklyPercent: totalMembers ? Math.round((weeklyDone / totalMembers) * 100) : 0,
+    pendingApplications,
+    pendingCerts,
+    activeNotices,
   };
 }

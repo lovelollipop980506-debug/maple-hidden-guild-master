@@ -5,12 +5,40 @@ import { env } from "@/lib/env";
 import { atLeast, type Tier } from "@/lib/rbac";
 import { ApiError } from "@/lib/api/respond";
 import { getForm, getFormById, type Form } from "@/lib/services/forms";
+import { registerMember, incrementMemberSkill } from "@/lib/services/members";
 
 /** Run a form's on-approve side effects (grant role / award points). */
 async function runOnApprove(form: Form, userId: string | null, answers: Record<string, unknown>, actorId: string) {
-  if (!userId) return;
   const db = supabaseAdmin();
   const config = await getConfig();
+
+  // 멤버 로스터 등록 (가입 승인) — userId 와 무관, answers.nick 기준
+  const reg = form.onApprove.registerMember;
+  if (reg) {
+    const nick = String((answers as any)[reg.nickField] ?? "").trim();
+    if (nick) {
+      const attributes: Record<string, unknown> = {
+        ...(reg.defaults ?? {}),
+        joinDate: new Date().toISOString().slice(0, 10),
+      };
+      for (const [attrKey, ansField] of Object.entries(reg.attrFields ?? {})) {
+        if ((answers as any)[ansField] != null) attributes[attrKey] = (answers as any)[ansField];
+      }
+      await registerMember(nick, attributes);
+    }
+  }
+
+  // 멤버 길드 스킬 증가 (인증 승인)
+  const inc = form.onApprove.incrementMemberSkill;
+  if (inc) {
+    const nick = String((answers as any)[inc.nickField] ?? "").trim();
+    const skill = String((answers as any)[inc.skillField] ?? "");
+    const count = Number((answers as any)[inc.countField] ?? 0);
+    if (nick && skill && count > 0) await incrementMemberSkill(nick, skill, count, inc.max ?? 20);
+  }
+
+  // ---- 이하 사이트 사용자(userId) 대상 효과 ----
+  if (!userId) return;
 
   if (form.onApprove.grantRoleId) {
     await db
@@ -19,13 +47,6 @@ async function runOnApprove(form: Form, userId: string | null, answers: Record<s
       .eq("discord_id", userId);
     await addRole(config.guildId, userId, form.onApprove.grantRoleId);
   }
-
-  // Sync known profile fields from the form answers (e.g. join form).
-  const profile: Record<string, unknown> = {};
-  if (typeof answers.character_name === "string") profile.character_name = answers.character_name;
-  if (typeof answers.job === "string") profile.job = answers.job;
-  if (answers.level != null && Number.isFinite(Number(answers.level))) profile.level = Number(answers.level);
-  if (Object.keys(profile).length) await db.from("users").update(profile).eq("discord_id", userId);
 
   let points = 0;
   if (form.onApprove.awardPointsField) points += Number(answers[form.onApprove.awardPointsField] ?? 0);

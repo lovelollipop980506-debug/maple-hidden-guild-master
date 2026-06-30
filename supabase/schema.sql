@@ -91,9 +91,37 @@ create table if not exists public.app_config (
   reviewer_role_ids text[] not null default '{}',
   member_role_ids   text[] not null default '{}',
   setup_completed   boolean not null default false,
+  weekly_reset_at   timestamptz,
   updated_by        text,
   updated_at        timestamptz not null default now()
 );
+
+-- ---------- members (길드 로스터; 로그인 users 와 분리) ----------
+-- 메이플 특정 필드(직급/직업/레벨/전투정보/길드스킬)는 attributes(jsonb)에 둔다.
+create table if not exists public.members (
+  id          uuid primary key default gen_random_uuid(),
+  nick        text unique not null,
+  attributes  jsonb not null default '{}',
+  active      boolean not null default true,
+  created_by  text,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+create index if not exists members_nick_idx on public.members(nick);
+
+-- ---------- notices (제네릭 공지) ----------
+create table if not exists public.notices (
+  id          uuid primary key default gen_random_uuid(),
+  title       text not null,
+  body        text not null default '',
+  notice_date date,
+  active      boolean not null default true,
+  sort        integer not null default 0,
+  created_by  text,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+create index if not exists notices_active_idx on public.notices(active, sort, created_at desc);
 
 -- ---------- audit_log ----------
 create table if not exists public.audit_log (
@@ -117,6 +145,8 @@ alter table public.point_ledger enable row level security;
 alter table public.poll_cursor enable row level security;
 alter table public.app_config enable row level security;
 alter table public.audit_log enable row level security;
+alter table public.members enable row level security;
+alter table public.notices enable row level security;
 
 insert into public.app_config (id) values ('default') on conflict (id) do nothing;
 
@@ -136,23 +166,26 @@ values
 (
   'join', '가입 신청서', '길드 가입을 신청합니다.',
   '[
-    {"name":"character_name","label":"캐릭터명","type":"text","required":true},
+    {"name":"discord","label":"디스코드","type":"text"},
+    {"name":"nick","label":"닉네임","type":"text","required":true},
     {"name":"job","label":"직업","type":"text"},
     {"name":"level","label":"레벨","type":"number"},
-    {"name":"playtime","label":"플레이 시간대","type":"text"},
-    {"name":"referral","label":"가입 경로","type":"text"},
-    {"name":"introduction","label":"자기소개","type":"textarea"}
+    {"name":"route","label":"가입 경로","type":"select","options":["friend","community","ingame","etc"]},
+    {"name":"intro","label":"각오 한마디","type":"textarea"}
   ]'::jsonb,
-  'web', 'guest', '{}'::jsonb, 0
+  'web', 'guest',
+  '{"registerMember":{"nickField":"nick","attrFields":{"job":"job","level":"level"},"defaults":{"rank":"일반길드원"}}}'::jsonb, 0
 ),
 (
-  'skill_points', '스킬 포인트 인증', '기록을 제출하고 승인을 받습니다.',
+  'skill_cert', '길드 스킬 인증', '길드 스킬을 올린 뒤 스크린샷과 함께 인증을 제출하세요.',
   '[
-    {"name":"skill","label":"스킬/항목","type":"text","required":true},
-    {"name":"points","label":"포인트","type":"number","required":true},
-    {"name":"note","label":"설명","type":"textarea"},
-    {"name":"evidence","label":"증빙 이미지","type":"image"}
+    {"name":"nick","label":"닉네임","type":"text","required":true},
+    {"name":"skill","label":"스킬 종류","type":"select","required":true,"options":["boss","ignore","attack","exp","accuracy"]},
+    {"name":"count","label":"인증 횟수","type":"number","required":true},
+    {"name":"evidence","label":"스크린샷","type":"image","required":true},
+    {"name":"memo","label":"메모","type":"textarea"}
   ]'::jsonb,
-  'web', 'member', '{"awardPointsField":"points"}'::jsonb, 1
+  'web', 'member',
+  '{"incrementMemberSkill":{"nickField":"nick","skillField":"skill","countField":"count","max":20}}'::jsonb, 1
 )
 on conflict (key) do nothing;

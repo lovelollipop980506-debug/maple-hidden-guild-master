@@ -14,6 +14,7 @@ export type AppConfig = {
   reviewerRoleIds: string[];
   memberRoleIds: string[];
   setupCompleted: boolean;
+  weeklyResetAt: string | null;
 };
 
 const EMPTY: AppConfig = {
@@ -24,6 +25,7 @@ const EMPTY: AppConfig = {
   reviewerRoleIds: [],
   memberRoleIds: [],
   setupCompleted: false,
+  weeklyResetAt: null,
 };
 
 /** Read the single config row. Memoized per request. Returns defaults if absent. */
@@ -43,6 +45,7 @@ export const getConfig = cache(async (): Promise<AppConfig> => {
       reviewerRoleIds: data.reviewer_role_ids ?? [],
       memberRoleIds: data.member_role_ids ?? [],
       setupCompleted: !!data.setup_completed,
+      weeklyResetAt: data.weekly_reset_at ?? null,
     };
   } catch (e) {
     console.error("[config] read failed:", e);
@@ -52,7 +55,7 @@ export const getConfig = cache(async (): Promise<AppConfig> => {
 
 /** Persist the config (called by /setup). */
 export async function saveConfig(
-  c: Omit<AppConfig, "setupCompleted">,
+  c: Omit<AppConfig, "setupCompleted" | "weeklyResetAt">,
   updatedBy: string,
   setupCompleted = true,
 ) {
@@ -73,4 +76,12 @@ export async function saveConfig(
       },
       { onConflict: "id" },
     );
+}
+
+/** Set the weekly certification reset baseline (admin reset action). */
+export async function setWeeklyResetAt(iso: string, updatedBy: string) {
+  return supabaseAdmin()
+    .from("app_config")
+    .update({ weekly_reset_at: iso, updated_by: updatedBy, updated_at: new Date().toISOString() })
+    .eq("id", "default");
 }
