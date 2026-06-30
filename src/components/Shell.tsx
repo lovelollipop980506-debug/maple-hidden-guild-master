@@ -8,7 +8,6 @@ import { Loading } from "@/components/Loading";
 
 const MAIN = [
   { href: "/", label: "홈" },
-  { href: "/cert", label: "길드 스킬업 인증" },
   { href: "/notices", label: "공지사항" },
 ];
 const ADMIN = [

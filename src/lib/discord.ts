@@ -5,9 +5,13 @@ const API = "https://discord.com/api/v10";
 
 type Json = Record<string, unknown>;
 
-/** Low-level call to the Discord REST API using the bot token. */
-async function botFetch(path: string, init?: RequestInit): Promise<Response> {
-  return fetch(`${API}${path}`, {
+/**
+ * Low-level call to the Discord REST API using the bot token.
+ * Retries on 429 (rate limit, honoring Retry-After) and on 5xx — so a transient
+ * hiccup doesn't surface as a false "no permission" / empty result.
+ */
+async function botFetch(path: string, init?: RequestInit, retries = 3): Promise<Response> {
+  const res = await fetch(`${API}${path}`, {
     ...init,
     headers: {
       Authorization: `Bot ${env.discord.botToken}`,
@@ -15,6 +19,13 @@ async function botFetch(path: string, init?: RequestInit): Promise<Response> {
       ...(init?.headers ?? {}),
     },
   });
+  if ((res.status === 429 || res.status >= 500) && retries > 0) {
+    const retryAfter = Number(res.headers.get("retry-after"));
+    const waitMs = Number.isFinite(retryAfter) && retryAfter > 0 ? Math.min(retryAfter * 1000, 5000) : 500;
+    await new Promise((r) => setTimeout(r, waitMs));
+    return botFetch(path, init, retries - 1);
+  }
+  return res;
 }
 
 /**

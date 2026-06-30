@@ -102,9 +102,8 @@ export default function HomePage() {
 
         <div className="home-actions">
           <div className="home-action">
-            <h3>길드 스킬 인증</h3>
-            <p>길드 스킬을 올린 뒤 스크린샷과 함께 인증을 제출하세요. 운영진 승인 후 누적 스킬업과 이번 주 인증 현황에 반영됩니다.</p>
-            <button onClick={() => router.push("/cert")}>인증 페이지 열기 →</button>
+            <h3>스킬업 인증</h3>
+            <p>스킬업 인증은 디스코드 인증 채널의 버튼으로 제출합니다. 운영진 승인 후 누적 스킬업과 이번 주 현황에 반영됩니다.</p>
           </div>
           <div className="home-action">
             <h3>길드원 조회</h3>
