@@ -8,16 +8,14 @@ import { Loading } from "@/components/Loading";
 
 const MAIN = [
   { href: "/", label: "홈" },
-  { href: "/cert", label: "길드 스킬 인증" },
+  { href: "/cert", label: "길드 스킬업 인증" },
   { href: "/notices", label: "공지사항" },
-  { href: "/invite", label: "봇 초대" },
 ];
 const ADMIN = [
   { href: "/admin/applications", label: "가입 신청", badge: "apps" },
   { href: "/admin/directory", label: "길드원" },
   { href: "/admin/pending", label: "인증 대기", badge: "certs" },
   { href: "/admin/logs", label: "승인 로그" },
-  { href: "/admin/weekly", label: "주간 현황" },
   { href: "/admin/notices", label: "공지 관리" },
   { href: "/admin/setup", label: "설정" },
 ];

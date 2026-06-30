@@ -76,7 +76,7 @@ export function Directory() {
                       <td>{m.job || "-"}</td>
                       <td>
                         {m.weekCount > 0 ? (
-                          <span className="badge ok">인증 완료</span>
+                          <span className="badge ok">인증 완료 {m.weekCount}회</span>
                         ) : (
                           <span className="badge no">미인증</span>
                         )}

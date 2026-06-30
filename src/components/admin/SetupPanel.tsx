@@ -14,6 +14,13 @@ type SetupOptions = {
   config: { notifyChannelId: string | null };
 };
 
+type InviteInfo = {
+  clientId: string;
+  genericInviteUrl: string;
+  needsRelogin: boolean;
+  targets: { id: string; name: string; botPresent: boolean; inviteUrl: string }[];
+};
+
 const TIER_OPTS = [
   { value: "none", label: "미지정" },
   { value: "member", label: "멤버" },
@@ -25,14 +32,13 @@ export function SetupPanel() {
   const [guildId, setGuildId] = useState("");
   const path = `/api/v1/setup/options${guildId ? `?guildId=${guildId}` : ""}`;
   const { data, loading, error } = useApi<SetupOptions>(path);
-  const [notify, setNotify] = useState("");
+  const { data: invite } = useApi<InviteInfo>("/api/v1/discord/invite");
   const [map, setMap] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (!data) return;
     if (!guildId) setGuildId(data.guild.id);
-    setNotify(data.config.notifyChannelId || "");
     setMap(Object.fromEntries(data.roles.map((r) => [r.id, r.suggestedTier])));
   }, [data, guildId]);
 
@@ -53,7 +59,7 @@ export function SetupPanel() {
   async function save() {
     setBusy(true);
     try {
-      await apiPut("/api/v1/setup", { guildId: data!.guild.id, notifyChannelId: notify, roleTiers: map });
+      await apiPut("/api/v1/setup", { guildId: data!.guild.id, roleTiers: map });
       toast("설정을 저장했습니다. 다시 로그인하면 적용됩니다.");
     } catch (e) {
       toast((e as ApiError).message);
@@ -67,8 +73,41 @@ export function SetupPanel() {
       <div className="panel-head">
         <div>
           <h2>설정</h2>
-          <p>연동할 서버를 선택하고, 알림 채널과 역할 → 등급 매핑을 설정합니다.</p>
+          <p>봇을 서버에 초대하고, 연동 서버와 역할 → 등급 매핑을 설정합니다.</p>
         </div>
+      </div>
+
+      <div className="card" style={{ padding: 20, marginBottom: 14 }}>
+        <div className="form-section-title" style={{ marginBottom: 14 }}>
+          봇 초대
+        </div>
+        {invite?.needsRelogin ? (
+          <p style={{ color: "var(--muted)" }}>초대 가능한 서버를 보려면 다시 로그인이 필요합니다.</p>
+        ) : !invite?.targets.length ? (
+          <p style={{ color: "var(--muted)" }}>
+            관리 권한이 있는 서버가 없습니다.{" "}
+            {invite && (
+              <a href={invite.genericInviteUrl} target="_blank" rel="noreferrer" className="discord-tag">
+                서버 직접 선택해 초대 →
+              </a>
+            )}
+          </p>
+        ) : (
+          <div style={{ display: "grid", gap: 8 }}>
+            {invite.targets.map((t) => (
+              <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <b style={{ minWidth: 160 }}>{t.name}</b>
+                {t.botPresent ? (
+                  <span className="badge ok">초대됨</span>
+                ) : (
+                  <a className="small-btn approve" href={t.inviteUrl} target="_blank" rel="noreferrer">
+                    봇 초대하기
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="card" style={{ padding: 20, marginBottom: 14 }}>
@@ -84,20 +123,6 @@ export function SetupPanel() {
           {data.setupCompleted && (
             <div className="tiny">현재 저장된 서버를 다른 서버로 바꿔 저장할 수 있습니다.</div>
           )}
-        </div>
-      </div>
-
-      <div className="card" style={{ padding: 20, marginBottom: 14 }}>
-        <div className="field" style={{ maxWidth: 360 }}>
-          <label>알림 채널</label>
-          <select value={notify} onChange={(e) => setNotify(e.target.value)}>
-            <option value="">사용 안 함</option>
-            {data.channels.map((c) => (
-              <option key={c.id} value={c.id}>
-                #{c.name}
-              </option>
-            ))}
-          </select>
         </div>
       </div>
 

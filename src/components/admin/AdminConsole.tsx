@@ -5,7 +5,6 @@ import { Applications } from "./Applications";
 import { Directory } from "./Directory";
 import { Pending } from "./Pending";
 import { Logs } from "./Logs";
-import { Weekly } from "./Weekly";
 import { NoticesAdmin } from "./NoticesAdmin";
 import { SetupPanel } from "./SetupPanel";
 import { Loading } from "@/components/Loading";
@@ -31,7 +30,6 @@ export function AdminConsole({ tab }: { tab: string }) {
       {tab === "directory" && <Directory />}
       {tab === "pending" && <Pending />}
       {tab === "logs" && <Logs />}
-      {tab === "weekly" && <Weekly />}
       {tab === "notices" && <NoticesAdmin />}
       {tab === "setup" && <SetupPanel />}
     </div>
