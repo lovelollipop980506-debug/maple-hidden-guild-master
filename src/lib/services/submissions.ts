@@ -68,6 +68,11 @@ export async function submitForm(formKey: string, userId: string, tier: Tier, fo
   if (!atLeast(tier, form.submitMinTier)) throw new ApiError("forbidden", "제출 권한이 없습니다.", 403);
 
   const db = supabaseAdmin();
+
+  // 차단된 디스코드 계정은 제출 자체를 막는다.
+  const { data: blocker } = await db.from("users").select("blocked").eq("discord_id", userId).maybeSingle();
+  if (blocker?.blocked) throw new ApiError("forbidden", "차단된 계정입니다. 운영진에게 문의하세요.", 403);
+
   const { data: dup } = await db
     .from("form_submissions")
     .select("id")
@@ -251,7 +256,7 @@ export async function listSubmissionsForReview(opts: {
   let q = db
     .from("form_submissions")
     .select(
-      "id, form_id, form_key, user_id, answers, status, source, discord_message_id, created_at, forms:form_id(title)",
+      "id, form_id, form_key, user_id, answers, status, review_note, source, discord_message_id, created_at, forms:form_id(title)",
       { count: "exact" },
     )
     .order("created_at", { ascending: false });
@@ -265,14 +270,17 @@ export async function listSubmissionsForReview(opts: {
   // Attach submitter info for web submissions. (user_id has no FK — discord
   // authors may not be site users — so we merge manually instead of embedding.)
   const ids = [...new Set(items.filter((i) => i.source === "web" && i.user_id).map((i) => i.user_id as string))];
-  let userMap: Record<string, { username: string; global_name: string | null; avatar: string | null }> = {};
+  let userMap: Record<string, { username: string; global_name: string | null; avatar: string | null; blocked: boolean }> = {};
   if (ids.length) {
     const { data: users } = await db
       .from("users")
-      .select("discord_id, username, global_name, avatar")
+      .select("discord_id, username, global_name, avatar, blocked")
       .in("discord_id", ids);
     userMap = Object.fromEntries(
-      (users ?? []).map((u) => [u.discord_id, { username: u.username, global_name: u.global_name, avatar: u.avatar }]),
+      (users ?? []).map((u) => [
+        u.discord_id,
+        { username: u.username, global_name: u.global_name, avatar: u.avatar, blocked: !!u.blocked },
+      ]),
     );
   }
   const withUser = items.map((i) => ({ ...i, user: i.user_id ? userMap[i.user_id as string] ?? null : null }));
@@ -332,4 +340,47 @@ export async function reviewSubmission(
     detail: { note, form: form.key },
   });
   return { id, status: decision };
+}
+
+/**
+ * 디스코드 계정 차단/해제. 차단은 거절과 별개로, 해당 계정의 가입 신청 자체를 막는다.
+ * 차단 시 검토 대기 중(pending)인 제출은 큐에서 빠지도록 함께 반려 처리한다.
+ */
+export async function setUserBlocked(targetId: string, actorId: string, blocked: boolean, reason: string) {
+  const db = supabaseAdmin();
+  const { data: u } = await db.from("users").select("discord_id").eq("discord_id", targetId).maybeSingle();
+  if (!u) throw new ApiError("not_found", "대상 사용자를 찾을 수 없습니다.", 404);
+
+  await db
+    .from("users")
+    .update({
+      blocked,
+      blocked_reason: blocked ? reason || null : null,
+      blocked_by: blocked ? actorId : null,
+      blocked_at: blocked ? new Date().toISOString() : null,
+    })
+    .eq("discord_id", targetId);
+
+  if (blocked) {
+    // 대기 중 신청은 반려로 정리(이력은 남는다).
+    await db
+      .from("form_submissions")
+      .update({
+        status: "rejected",
+        reviewer_id: actorId,
+        review_note: reason ? `차단: ${reason}` : "차단됨",
+        reviewed_at: new Date().toISOString(),
+      })
+      .eq("user_id", targetId)
+      .eq("status", "pending");
+  }
+
+  await db.from("audit_log").insert({
+    actor_id: actorId,
+    action: blocked ? "user.block" : "user.unblock",
+    target_type: "user",
+    target_id: targetId,
+    detail: { reason },
+  });
+  return { id: targetId, blocked };
 }

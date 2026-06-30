@@ -7,7 +7,7 @@ export async function getMe(session: Session) {
   const u = session.user;
   const { data } = await supabaseAdmin()
     .from("users")
-    .select("member_status, total_points, character_name, level, job")
+    .select("member_status, total_points, character_name, level, job, blocked")
     .eq("discord_id", u.discordId)
     .maybeSingle();
 
@@ -19,6 +19,7 @@ export async function getMe(session: Session) {
     isAdmin: u.tier === "admin",
     roles: u.roles ?? [],
     memberStatus: data?.member_status ?? "none",
+    blocked: !!data?.blocked,
     totalPoints: data?.total_points ?? 0,
     characterName: data?.character_name ?? null,
     level: data?.level ?? null,

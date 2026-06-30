@@ -3,10 +3,17 @@ import { Fragment, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { useMe } from "@/lib/client/useMe";
+import { useApi } from "@/lib/client/useApi";
 import { apiPostForm, ApiError } from "@/lib/client/api";
 import { toast } from "@/lib/client/toast";
-import { tierAtLeast } from "@/lib/client/types";
+import { STATUS_LABELS } from "@/lib/client/maple";
+import { tierAtLeast, type MySubmission } from "@/lib/client/types";
 import { Loading } from "@/components/Loading";
+
+function fmtDate(iso: string) {
+  const d = new Date(iso);
+  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
+}
 
 const JOB_GROUPS: { group: string; jobs: string[] }[] = [
   { group: "전사", jobs: ["히어로", "다크나이트", "팔라딘", "아란"] },
@@ -27,7 +34,8 @@ const TIMES = [
 export default function JoinPage() {
   const router = useRouter();
   const { me } = useMe();
-  const [done, setDone] = useState(false);
+  // 내 제출 이력 (검토 중 여부 + 지난 신청 표시용)
+  const { data: mine, reload: reloadMine } = useApi<MySubmission[]>(me ? "/api/v1/submissions/mine" : null);
   const [nick, setNick] = useState("");
   const [level, setLevel] = useState("");
   const [job, setJob] = useState("");
@@ -43,6 +51,9 @@ export default function JoinPage() {
   }, [me, router]);
 
   if (!me || tierAtLeast(me.tier, "member")) return <Loading />;
+
+  const joinSubs = (mine ?? []).filter((s) => s.form_key === "join");
+  const pending = joinSubs.some((s) => s.status === "pending");
 
   // 숫자만 + 최대 자릿수 제한 (HTML max 속성은 직접 입력을 못 막음)
   const onlyDigits = (v: string, maxLen: number) => v.replace(/\D/g, "").slice(0, maxLen);
@@ -70,7 +81,7 @@ export default function JoinPage() {
       fd.append("ignore", ignore);
       fd.append("playtime", ordered.join(", "));
       await apiPostForm("/api/v1/forms/join/submissions", fd);
-      setDone(true);
+      await reloadMine(); // 검토 중 화면으로 전환
     } catch (e) {
       toast((e as ApiError).message || "신청에 실패했습니다.");
     } finally {
@@ -95,9 +106,15 @@ export default function JoinPage() {
           </button>
         </div>
 
-        {done ? (
+        {me.blocked ? (
           <div className="empty" style={{ height: "auto", padding: "30px 0", lineHeight: 1.7 }}>
-            ✅ 가입 신청이 접수되었습니다.
+            🚫 차단된 계정입니다.
+            <br />
+            가입 신청이 제한되어 있어요. 운영진에게 문의해 주세요.
+          </div>
+        ) : pending ? (
+          <div className="empty" style={{ height: "auto", padding: "30px 0", lineHeight: 1.7 }}>
+            ⏳ 가입 신청을 검토 중입니다.
             <br />
             운영진 승인 후 디스코드 역할이 부여되면, 다시 로그인 시 입장됩니다.
           </div>
@@ -175,6 +192,23 @@ export default function JoinPage() {
               {busy ? "제출 중…" : "가입 신청하기"}
             </button>
           </>
+        )}
+
+        {joinSubs.length > 0 && (
+          <div className="join-history">
+            <div className="join-history-title">지난 신청 이력</div>
+            {joinSubs.map((h) => (
+              <div key={h.id} className="join-history-item">
+                <span className="join-history-date">{fmtDate(h.created_at)}</span>
+                <span className={`badge ${h.status === "approved" ? "ok" : h.status === "rejected" ? "no" : "wait"}`}>
+                  {STATUS_LABELS[h.status] ?? h.status}
+                </span>
+                {h.status === "rejected" && h.review_note && (
+                  <span className="join-history-note">사유: {h.review_note}</span>
+                )}
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </div>

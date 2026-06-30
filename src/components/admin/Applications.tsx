@@ -27,6 +27,18 @@ export function Applications() {
     }
   }
 
+  async function toggleBlock(userId: string, name: string, blocked: boolean) {
+    if (blocked && !confirm(`${name} 계정의 가입 신청을 차단할까요? (대기 중인 신청은 반려 처리됩니다)`)) return;
+    const reason = blocked ? prompt("차단 사유 (선택)") ?? "" : "";
+    try {
+      await apiPost(`/api/v1/users/${userId}/block`, { blocked, reason });
+      toast(blocked ? "계정을 차단했습니다" : "차단을 해제했습니다");
+      reload();
+    } catch (e) {
+      toast((e as ApiError).message);
+    }
+  }
+
   return (
     <div className="panel active">
       <div className="panel-head">
@@ -66,6 +78,7 @@ export function Applications() {
                     <td>{fmt(r.created_at)}</td>
                     <td>
                       <span className="discord-tag">{r.user?.global_name || r.user?.username || "-"}</span>
+                      {r.user?.blocked && <span className="badge no" style={{ marginLeft: 6 }}>차단됨</span>}
                     </td>
                     <td>
                       <b>{a.nick}</b>
@@ -77,20 +90,38 @@ export function Applications() {
                     <td>{a.ignore ?? "-"}</td>
                     <td>{a.playtime || "-"}</td>
                     <td>
-                      {r.status === "pending" ? (
-                        <div className="admin-actions">
-                          <button className="small-btn approve" onClick={() => decide(r.id, "approved")}>
-                            승인
+                      <div className="admin-actions">
+                        {r.status === "pending" ? (
+                          <>
+                            <button className="small-btn approve" onClick={() => decide(r.id, "approved")}>
+                              승인
+                            </button>
+                            <button className="small-btn reject" onClick={() => decide(r.id, "rejected")}>
+                              반려
+                            </button>
+                          </>
+                        ) : r.status === "approved" ? (
+                          <span className="badge ok">승인</span>
+                        ) : (
+                          <span className="badge no" title={r.review_note || undefined}>
+                            반려{r.review_note ? ` · ${r.review_note}` : ""}
+                          </span>
+                        )}
+                        {r.user_id && (
+                          <button
+                            className="small-btn block"
+                            onClick={() =>
+                              toggleBlock(
+                                r.user_id!,
+                                r.user?.global_name || r.user?.username || "이 계정",
+                                !r.user?.blocked,
+                              )
+                            }
+                          >
+                            {r.user?.blocked ? "차단 해제" : "차단"}
                           </button>
-                          <button className="small-btn reject" onClick={() => decide(r.id, "rejected")}>
-                            반려
-                          </button>
-                        </div>
-                      ) : r.status === "approved" ? (
-                        <span className="badge ok">승인</span>
-                      ) : (
-                        <span className="badge no">반려</span>
-                      )}
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );

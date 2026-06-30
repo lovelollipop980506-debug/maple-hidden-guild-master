@@ -16,6 +16,10 @@ create table if not exists public.users (
   character_name  text,                            -- 메이플 캐릭터명 (프로필)
   level           integer,                         -- 캐릭터 레벨
   job             text,                            -- 직업
+  blocked         boolean not null default false,  -- 가입 신청 차단(거절과 별개)
+  blocked_reason  text,
+  blocked_by      text,
+  blocked_at      timestamptz,
   joined_at       timestamptz,
   last_login      timestamptz,
   created_at      timestamptz not null default now()

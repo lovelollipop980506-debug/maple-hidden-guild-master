@@ -14,6 +14,7 @@ export interface Me {
   isAdmin: boolean;
   roles: string[];
   memberStatus: string;
+  blocked: boolean;
 }
 
 export interface AppConfig {
@@ -79,10 +80,22 @@ export interface ReviewSubmission {
   user_id: string | null;
   answers: Record<string, unknown> & { author_name?: string; image_url?: string; content?: string };
   status: SubmissionStatus;
+  review_note?: string | null;
   source: "web" | "discord";
   created_at: string;
   forms?: { title: string };
-  user?: { username?: string; global_name?: string | null; avatar?: string | null } | null;
+  user?: { username?: string; global_name?: string | null; avatar?: string | null; blocked?: boolean } | null;
+}
+
+export interface MySubmission {
+  id: string;
+  form_key: string;
+  answers: Record<string, unknown>;
+  status: SubmissionStatus;
+  review_note?: string | null;
+  created_at: string;
+  reviewed_at?: string | null;
+  forms?: { title: string };
 }
 
 export interface ListResult<T> {
