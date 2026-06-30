@@ -12,6 +12,7 @@
 
 import { createPublicKey, verify as edVerify } from "node:crypto";
 import type { Form, FormField } from "@/lib/services/forms";
+import { SKILL_LABELS } from "@/lib/client/maple";
 
 // Interaction request types (incoming `body.type`).
 export const InteractionType = {
@@ -124,7 +125,11 @@ function fieldToLabel(f: FormField) {
             custom_id: f.name,
             min_values: required ? 1 : 0,
             max_values: 1,
-            options: f.options.slice(0, 25).map((o) => ({ label: o.slice(0, 100), value: o.slice(0, 100) })),
+            // 값(value)은 저장 키(영어), 라벨(label)은 사이트와 동일한 한글 표시.
+            // 매핑에 없는 옵션은 원문 그대로 표시(폴백).
+            options: f.options
+              .slice(0, 25)
+              .map((o) => ({ label: (SKILL_LABELS[o] ?? o).slice(0, 100), value: o.slice(0, 100) })),
           },
         };
       }
