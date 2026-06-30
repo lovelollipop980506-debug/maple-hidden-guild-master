@@ -33,6 +33,8 @@ export async function getSetupOptions(userId: string, selectedGuildId?: string) 
     setupCompleted: config.setupCompleted,
     manageableGuilds: manageable,
     guild,
+    // manageable 은 (봇이 속한 길드 ∩ 사용자가 관리하는 길드)라, 여기 뜨는 서버는 봇이 이미 있음.
+    botPresent: true,
     inviteUrl: botInviteUrl(guild.id), // 연동 서버 한정 (재)초대 링크 — 봇 권한/스코프 업데이트용
     channels,
     roles: roleOptions,
