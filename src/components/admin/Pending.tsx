@@ -1,5 +1,6 @@
 "use client";
 import { useApi } from "@/lib/client/useApi";
+import { useIsMobile } from "@/lib/client/useIsMobile";
 import { apiPost, ApiError } from "@/lib/client/api";
 import { toast } from "@/lib/client/toast";
 import { SKILL_LABELS } from "@/lib/client/maple";
@@ -16,6 +17,7 @@ export function Pending() {
     "/api/v1/submissions?formKey=skill_cert&status=pending",
   );
   const rows = data?.items ?? [];
+  const mobile = useIsMobile();
 
   if (loading && !data) return <Loading />;
 
@@ -39,6 +41,48 @@ export function Pending() {
           <p>제출된 길드 스킬 인증을 검토합니다. 승인하면 해당 멤버의 길드 스킬에 반영됩니다.</p>
         </div>
       </div>
+
+      {mobile ? (
+        <div className="m-list">
+          {rows.length === 0 ? (
+            <div className="card empty" style={{ padding: 24 }}>
+              승인 대기 없음
+            </div>
+          ) : (
+            rows.map((r) => {
+              const a = r.answers as Record<string, any>;
+              const nick = a.nick || a.author_name || "-";
+              const img = a.evidence || a.image_url;
+              return (
+                <div key={r.id} className="m-item">
+                  <div className="m-item-head">
+                    <div style={{ minWidth: 0 }}>
+                      <div className="m-item-title">{nick}</div>
+                      <div className="m-item-sub">
+                        {SKILL_LABELS[a.skill] || a.skill || "-"} · {a.count ?? "-"}회 · {fmt(r.created_at)}
+                      </div>
+                    </div>
+                    {img && <img className="shot" src={img} alt="증빙" onClick={() => window.open(img, "_blank")} />}
+                  </div>
+                  {a.memo && (
+                    <div className="m-item-sub" style={{ marginTop: 8 }}>
+                      메모: {a.memo}
+                    </div>
+                  )}
+                  <div className="m-item-actions">
+                    <AsyncButton className="small-btn approve" onClick={() => decide(r.id, "approved")}>
+                      승인
+                    </AsyncButton>
+                    <AsyncButton className="small-btn reject" onClick={() => decide(r.id, "rejected")}>
+                      거절
+                    </AsyncButton>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      ) : (
       <div className="card table-card">
         <table className="table">
           <thead>
@@ -96,6 +140,7 @@ export function Pending() {
           </tbody>
         </table>
       </div>
+      )}
     </div>
   );
 }

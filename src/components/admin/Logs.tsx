@@ -1,5 +1,6 @@
 "use client";
 import { useApi } from "@/lib/client/useApi";
+import { useIsMobile } from "@/lib/client/useIsMobile";
 import { SKILL_LABELS } from "@/lib/client/maple";
 import { Loading } from "@/components/Loading";
 import type { ListResult, AuditEntry } from "@/lib/client/types";
@@ -54,6 +55,7 @@ function describe(e: AuditEntry): string {
 export function Logs() {
   const { data, loading } = useApi<ListResult<AuditEntry>>("/api/v1/audit?limit=200");
   const rows = data?.items ?? [];
+  const mobile = useIsMobile();
 
   if (loading && !data) return <Loading />;
 
@@ -65,41 +67,67 @@ export function Logs() {
           <p>승인·반려·차단·멤버 삭제·수기 인증 등록·설정 변경 등 모든 운영 활동 기록입니다.</p>
         </div>
       </div>
-      <div className="card table-card">
-        <table className="table">
-          <thead>
-            <tr>
-              <th>시각</th>
-              <th>작업</th>
-              <th>내용</th>
-              <th>담당</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 ? (
+      {mobile ? (
+        <div className="m-list">
+          {rows.length === 0 ? (
+            <div className="card empty" style={{ padding: 24 }}>
+              로그 없음
+            </div>
+          ) : (
+            rows.map((e) => {
+              const meta = ACTION[e.action] ?? { label: e.action, tone: "info" as const };
+              return (
+                <div key={e.id} className="m-item">
+                  <div className="m-item-head">
+                    <span className={`badge ${meta.tone === "info" ? "wait" : meta.tone}`}>{meta.label}</span>
+                    <span className="m-item-sub">{fmt(e.created_at)}</span>
+                  </div>
+                  <div style={{ marginTop: 8, fontSize: 14 }}>{describe(e) || "-"}</div>
+                  <div className="m-item-sub" style={{ marginTop: 6 }}>
+                    담당: {e.actorNick || (e.actor_id ? "(삭제된 사용자)" : "시스템")}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      ) : (
+        <div className="card table-card">
+          <table className="table">
+            <thead>
               <tr>
-                <td colSpan={4} className="empty">
-                  로그 없음
-                </td>
+                <th>시각</th>
+                <th>작업</th>
+                <th>내용</th>
+                <th>담당</th>
               </tr>
-            ) : (
-              rows.map((e) => {
-                const meta = ACTION[e.action] ?? { label: e.action, tone: "info" as const };
-                return (
-                  <tr key={e.id}>
-                    <td>{fmt(e.created_at)}</td>
-                    <td>
-                      <span className={`badge ${meta.tone === "info" ? "wait" : meta.tone}`}>{meta.label}</span>
-                    </td>
-                    <td>{describe(e) || "-"}</td>
-                    <td>{e.actorNick || (e.actor_id ? "(삭제된 사용자)" : "시스템")}</td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {rows.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="empty">
+                    로그 없음
+                  </td>
+                </tr>
+              ) : (
+                rows.map((e) => {
+                  const meta = ACTION[e.action] ?? { label: e.action, tone: "info" as const };
+                  return (
+                    <tr key={e.id}>
+                      <td>{fmt(e.created_at)}</td>
+                      <td>
+                        <span className={`badge ${meta.tone === "info" ? "wait" : meta.tone}`}>{meta.label}</span>
+                      </td>
+                      <td>{describe(e) || "-"}</td>
+                      <td>{e.actorNick || (e.actor_id ? "(삭제된 사용자)" : "시스템")}</td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
