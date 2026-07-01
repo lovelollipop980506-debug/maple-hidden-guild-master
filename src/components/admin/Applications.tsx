@@ -84,7 +84,7 @@ export function Applications() {
                   <tr key={r.id}>
                     <td>{fmt(r.created_at)}</td>
                     <td>
-                      <span className="discord-tag">{r.user?.global_name || r.user?.username || "-"}</span>
+                      <span className="discord-tag">{r.user?.guild_nick || r.user?.global_name || r.user?.username || "-"}</span>
                       {r.user?.blocked && <span className="badge no" style={{ marginLeft: 6 }}>차단됨</span>}
                     </td>
                     <td>

@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { SKILL_KEYS } from "@/lib/client/maple";
+import { ApiError } from "@/lib/api/respond";
 
 /**
  * 길드원 = member 이상 등급(디스코드 역할 보유 + 사이트 로그인)인 `users`.
@@ -64,7 +65,9 @@ export async function listMembers(opts: { q?: string; cert?: string } = {}) {
   const [{ data: users }, agg] = await Promise.all([
     db
       .from("users")
-      .select("discord_id, username, global_name, avatar, tier, roles, character_name, job, level, joined_at")
+      .select(
+        "discord_id, username, global_name, guild_nick, avatar, tier, roles, character_name, job, level, joined_at",
+      )
       .in("tier", MEMBER_TIERS),
     aggregateByUser(),
   ]);
@@ -80,7 +83,12 @@ export async function listMembers(opts: { q?: string; cert?: string } = {}) {
     }
     return {
       discordId: u.discord_id as string,
-      nick: (u.character_name as string) || (u.global_name as string) || (u.username as string),
+      // 히든 서버 닉네임 우선 → 없으면 캐릭터명/글로벌/유저명.
+      nick:
+        (u.guild_nick as string) ||
+        (u.character_name as string) ||
+        (u.global_name as string) ||
+        (u.username as string),
       job: (u.job as string) ?? null,
       level: (u.level as number) ?? null,
       avatar: (u.avatar as string) ?? null,
@@ -100,4 +108,81 @@ export async function listMembers(opts: { q?: string; cert?: string } = {}) {
 
   items.sort((a, b) => b.totalSkills - a.totalSkills || a.nick.localeCompare(b.nick));
   return { items, total: items.length };
+}
+
+/** 대상 멤버의 표시 닉네임(서버 닉 우선). */
+async function memberNick(db: ReturnType<typeof supabaseAdmin>, discordId: string): Promise<string | null> {
+  const { data } = await db
+    .from("users")
+    .select("guild_nick, character_name, global_name, username")
+    .eq("discord_id", discordId)
+    .maybeSingle();
+  if (!data) return null;
+  return data.guild_nick || data.character_name || data.global_name || data.username || null;
+}
+
+/**
+ * 운영자가 특정 멤버의 스킬업 인증을 수기 등록한다. 승인된 skill_cert 제출로 바로 적재되어
+ * 누적/이번 주 집계에 반영된다(증빙 이미지 불요). source='manual'.
+ */
+export async function addManualCert(
+  actorId: string,
+  discordId: string,
+  input: { skill: string; count: unknown; memo?: string },
+) {
+  const db = supabaseAdmin();
+  if (!SKILL_KEYS.includes(input.skill as (typeof SKILL_KEYS)[number])) {
+    throw new ApiError("invalid", "스킬 종류가 올바르지 않습니다.");
+  }
+  const count = Number(input.count);
+  if (!Number.isInteger(count) || count < 1 || count > 20) {
+    throw new ApiError("invalid", "스킬업 횟수는 1~20 사이의 정수여야 합니다.");
+  }
+  const nick = await memberNick(db, discordId);
+  if (!nick) throw new ApiError("not_found", "대상 멤버를 찾을 수 없습니다.", 404);
+
+  const { data: form } = await db.from("forms").select("id").eq("key", "skill_cert").maybeSingle();
+  if (!form) throw new ApiError("db", "인증 폼을 찾을 수 없습니다.", 500);
+
+  const answers = { nick, skill: input.skill, count, memo: input.memo?.trim() || null, author_name: nick, manual: true };
+  const { error } = await db.from("form_submissions").insert({
+    form_id: form.id,
+    form_key: "skill_cert",
+    user_id: discordId,
+    answers,
+    status: "approved",
+    source: "manual",
+    reviewer_id: actorId,
+    reviewed_at: new Date().toISOString(),
+  });
+  if (error) throw new ApiError("db", "등록에 실패했습니다.", 500);
+
+  await db.from("audit_log").insert({
+    actor_id: actorId,
+    action: "member.cert_add",
+    target_type: "user",
+    target_id: discordId,
+    detail: { nick, skill: input.skill, count },
+  });
+  return { ok: true };
+}
+
+/** 멤버 삭제: 로스터(users)에서 제거 + 그 멤버의 제출 이력 삭제. 운영 로그엔 삭제 기록이 남는다. */
+export async function deleteMember(actorId: string, discordId: string) {
+  const db = supabaseAdmin();
+  const nick = await memberNick(db, discordId);
+  if (nick == null) throw new ApiError("not_found", "대상 멤버를 찾을 수 없습니다.", 404);
+
+  await db.from("form_submissions").delete().eq("user_id", discordId);
+  const { error } = await db.from("users").delete().eq("discord_id", discordId);
+  if (error) throw new ApiError("db", "삭제에 실패했습니다.", 500);
+
+  await db.from("audit_log").insert({
+    actor_id: actorId,
+    action: "member.delete",
+    target_type: "user",
+    target_id: discordId,
+    detail: { nick },
+  });
+  return { ok: true };
 }

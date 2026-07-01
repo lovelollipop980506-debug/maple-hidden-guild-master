@@ -13,7 +13,7 @@ type SetupOptions = {
   inviteUrl: string;
   channels: { id: string; name: string }[];
   roles: { id: string; name: string; suggestedTier: string }[];
-  config: { notifyChannelId: string | null; certChannelId: string | null };
+  config: { notifyChannelId: string | null; certChannelId: string | null; certMessage: string | null };
 };
 
 export function SetupPanel() {
@@ -24,6 +24,7 @@ export function SetupPanel() {
   const [reviewers, setReviewers] = useState<Set<string>>(new Set());
   const [notifyCh, setNotifyCh] = useState("");
   const [certCh, setCertCh] = useState("");
+  const [certMsg, setCertMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [posting, setPosting] = useState(false);
 
@@ -33,6 +34,7 @@ export function SetupPanel() {
     setReviewers(new Set(data.roles.filter((r) => r.suggestedTier === "reviewer").map((r) => r.id)));
     setNotifyCh(data.config.notifyChannelId ?? "");
     setCertCh(data.config.certChannelId ?? "");
+    setCertMsg(data.config.certMessage ?? "");
   }, [data, guildId]);
 
   if (loading && !data) return <Loading />;
@@ -66,6 +68,7 @@ export function SetupPanel() {
         guildId: data!.guild.id,
         notifyChannelId: notifyCh,
         certChannelId: certCh,
+        certMessage: certMsg,
         roleTiers,
       });
       toast("설정을 저장했습니다. 다시 로그인하면 적용됩니다.");
@@ -151,7 +154,7 @@ export function SetupPanel() {
             <p className="tiny" style={{ marginTop: 6 }}>가입·인증 승인/반려 알림이 이 채널로 전송됩니다.</p>
           </div>
           <div>
-            <label className="tiny" style={{ display: "block", marginBottom: 6, fontWeight: 800 }}>스킬업 인증 채널</label>
+            <label className="tiny" style={{ display: "block", marginBottom: 6, fontWeight: 800 }}>길드 스킬업 인증 채널</label>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               <select value={certCh} onChange={(e) => setCertCh(e.target.value)} style={{ flex: 1, minWidth: 220, height: 42 }}>
                 <option value="">선택 안 함</option>
@@ -165,8 +168,16 @@ export function SetupPanel() {
                 {posting ? <span className="btn-spinner" /> : "인증 버튼 올리기"}
               </button>
             </div>
+            <label className="tiny" style={{ display: "block", margin: "12px 0 6px", fontWeight: 800 }}>인증 안내 문구</label>
+            <textarea
+              className="textarea"
+              style={{ height: 80 }}
+              placeholder="예: 아래 버튼을 눌러 스킬업을 인증하세요."
+              value={certMsg}
+              onChange={(e) => setCertMsg(e.target.value)}
+            />
             <p className="tiny" style={{ marginTop: 6 }}>
-              선택한 채널에 “스킬업 인증하기” 버튼을 올립니다. 멤버가 눌러 인증을 제출해요. (채널 변경 시 먼저 설정 저장)
+              선택한 채널에 “스킬업 인증하기” 버튼을 위 문구와 함께 올립니다. 멤버가 눌러 인증을 제출해요. (변경 시 먼저 설정 저장 → 인증 버튼 올리기)
             </p>
           </div>
         </div>

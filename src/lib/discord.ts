@@ -33,13 +33,21 @@ async function botFetch(path: string, init?: RequestInit, retries = 3): Promise<
  * Requires the `guilds.members.read` scope. Returns [] if not a guild member.
  */
 export async function getGuildMemberRoles(accessToken: string, guildId: string): Promise<string[]> {
-  if (!guildId) return [];
+  return (await getGuildMemberInfo(accessToken, guildId)).roles;
+}
+
+/** 운영 길드에서의 멤버 정보(역할 + 서버 닉네임). 서버 닉이 없으면 nick=null. */
+export async function getGuildMemberInfo(
+  accessToken: string,
+  guildId: string,
+): Promise<{ roles: string[]; nick: string | null }> {
+  if (!guildId) return { roles: [], nick: null };
   const res = await fetch(`${API}/users/@me/guilds/${guildId}/member`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
-  if (!res.ok) return [];
-  const data = (await res.json()) as { roles?: string[] };
-  return data.roles ?? [];
+  if (!res.ok) return { roles: [], nick: null };
+  const data = (await res.json()) as { roles?: string[]; nick?: string | null };
+  return { roles: data.roles ?? [], nick: data.nick ?? null };
 }
 
 /**

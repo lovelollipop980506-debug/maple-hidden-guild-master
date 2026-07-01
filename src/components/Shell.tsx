@@ -15,7 +15,7 @@ const ADMIN = [
   { href: "/admin/applications", label: "가입 신청", badge: "apps" },
   { href: "/admin/directory", label: "길드원" },
   { href: "/admin/pending", label: "인증 대기", badge: "certs" },
-  { href: "/admin/logs", label: "승인 로그" },
+  { href: "/admin/logs", label: "운영 로그" },
   { href: "/admin/notices", label: "공지 관리" },
   { href: "/admin/setup", label: "설정", adminOnly: true }, // 길드 마스터(소유자/관리자)만
 ];

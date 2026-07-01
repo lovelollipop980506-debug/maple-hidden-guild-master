@@ -84,7 +84,24 @@ export interface ReviewSubmission {
   source: "web" | "discord";
   created_at: string;
   forms?: { title: string };
-  user?: { username?: string; global_name?: string | null; avatar?: string | null; blocked?: boolean } | null;
+  user?: {
+    username?: string;
+    global_name?: string | null;
+    guild_nick?: string | null;
+    avatar?: string | null;
+    blocked?: boolean;
+  } | null;
+}
+
+export interface AuditEntry {
+  id: string;
+  actor_id: string | null;
+  actorNick: string | null;
+  action: string;
+  target_type: string | null;
+  target_id: string | null;
+  detail: Record<string, unknown> | null;
+  created_at: string;
 }
 
 export interface MySubmission {

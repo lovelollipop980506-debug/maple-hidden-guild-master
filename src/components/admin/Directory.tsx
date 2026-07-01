@@ -1,6 +1,8 @@
 "use client";
 import { Fragment, useState } from "react";
 import { useApi } from "@/lib/client/useApi";
+import { apiPost, apiDelete, ApiError } from "@/lib/client/api";
+import { toast } from "@/lib/client/toast";
 import { SKILL_KEYS, SKILL_LABELS, TIER_LABELS } from "@/lib/client/maple";
 import type { ListResult, GuildMember } from "@/lib/client/types";
 import { Loading } from "@/components/Loading";
@@ -9,14 +11,58 @@ export function Directory() {
   const [q, setQ] = useState("");
   const [cert, setCert] = useState("");
   const [open, setOpen] = useState<string | null>(null);
+  // 수기 인증 입력 (열린 멤버 기준)
+  const [skill, setSkill] = useState<string>(SKILL_KEYS[0]);
+  const [count, setCount] = useState("");
+  const [memo, setMemo] = useState("");
+  const [busy, setBusy] = useState(false);
 
   const params = new URLSearchParams();
   if (q) params.set("q", q);
   if (cert) params.set("cert", cert);
-  const { data, loading } = useApi<ListResult<GuildMember>>(`/api/v1/members?${params.toString()}`);
+  const { data, loading, reload } = useApi<ListResult<GuildMember>>(`/api/v1/members?${params.toString()}`);
   const rows = data?.items ?? [];
 
   if (loading && !data) return <Loading />;
+
+  function toggle(id: string) {
+    setOpen((prev) => (prev === id ? null : id));
+    setCount("");
+    setMemo("");
+    setSkill(SKILL_KEYS[0]);
+  }
+
+  async function addCert(discordId: string) {
+    const c = Number(count);
+    if (!Number.isInteger(c) || c < 1 || c > 20) return toast("스킬업 횟수는 1~20 사이로 입력하세요");
+    setBusy(true);
+    try {
+      await apiPost(`/api/v1/members/${discordId}/certs`, { skill, count: c, memo });
+      toast("스킬업 인증을 등록했습니다");
+      setCount("");
+      setMemo("");
+      reload();
+    } catch (e) {
+      toast((e as ApiError).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function removeMember(discordId: string, nick: string) {
+    if (!confirm(`${nick} 님을 삭제할까요?\n제출 이력도 함께 삭제되며 되돌릴 수 없습니다.`)) return;
+    setBusy(true);
+    try {
+      await apiDelete(`/api/v1/members/${discordId}`);
+      toast("멤버를 삭제했습니다");
+      setOpen(null);
+      reload();
+    } catch (e) {
+      toast((e as ApiError).message);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
     <div className="panel active">
@@ -63,7 +109,7 @@ export function Directory() {
                 const isOpen = open === m.discordId;
                 return (
                   <Fragment key={m.discordId}>
-                    <tr className="member-main-row" onClick={() => setOpen(isOpen ? null : m.discordId)}>
+                    <tr className="member-main-row" onClick={() => toggle(m.discordId)}>
                       <td className="nick">
                         <b>{m.nick}</b>
                       </td>
@@ -89,7 +135,7 @@ export function Directory() {
                     {isOpen && (
                       <tr className="member-detail-row">
                         <td colSpan={7}>
-                          <div className="member-detail" style={{ gridTemplateColumns: "1fr" }}>
+                          <div className="member-detail" style={{ gridTemplateColumns: "1fr", gap: 18 }}>
                             <div>
                               <div className="detail-title">길드 스킬</div>
                               <div className="guild-skill-list">
@@ -106,6 +152,52 @@ export function Directory() {
                                   );
                                 })}
                               </div>
+                            </div>
+
+                            <div>
+                              <div className="detail-title">스킬업 인증 수기 등록</div>
+                              <div className="manual-cert">
+                                <select className="select" value={skill} onChange={(e) => setSkill(e.target.value)}>
+                                  {SKILL_KEYS.map((k) => (
+                                    <option key={k} value={k}>
+                                      {SKILL_LABELS[k]}
+                                    </option>
+                                  ))}
+                                </select>
+                                <input
+                                  className="input"
+                                  type="text"
+                                  inputMode="numeric"
+                                  placeholder="횟수 1~20"
+                                  value={count}
+                                  onChange={(e) => setCount(e.target.value.replace(/\D/g, "").slice(0, 2))}
+                                />
+                                <input
+                                  className="input"
+                                  placeholder="메모 (선택)"
+                                  value={memo}
+                                  onChange={(e) => setMemo(e.target.value)}
+                                />
+                                <button className="small-btn approve" disabled={busy} onClick={() => addCert(m.discordId)}>
+                                  {busy ? <span className="btn-spinner" /> : "등록"}
+                                </button>
+                              </div>
+                              <p className="tiny" style={{ marginTop: 6 }}>
+                                승인된 인증으로 즉시 누적·이번 주 현황에 반영됩니다. (증빙 불요)
+                              </p>
+                            </div>
+
+                            <div style={{ borderTop: "1px solid var(--line)", paddingTop: 14 }}>
+                              <button
+                                className="reset-btn"
+                                disabled={busy}
+                                onClick={() => removeMember(m.discordId, m.nick)}
+                              >
+                                멤버 삭제
+                              </button>
+                              <span className="tiny" style={{ marginLeft: 10 }}>
+                                로스터에서 제거하고 제출 이력도 삭제합니다. (되돌릴 수 없음)
+                              </span>
                             </div>
                           </div>
                         </td>

@@ -16,6 +16,8 @@ import { ApiError } from "@/lib/api/respond";
 import { env } from "@/lib/env";
 
 const CERT_FORM_KEY = "skill_cert";
+export const DEFAULT_CERT_MESSAGE =
+  "아래 버튼을 눌러 스킬업을 인증하세요.\n운영진 승인 후 누적 스킬업과 이번 주 현황에 반영됩니다.";
 
 /**
  * 부트스트랩 상태 — 잠금(또는 설정) 길드에 봇이 들어와 있는지.
@@ -91,7 +93,11 @@ export async function getSetupOptions(userId: string, selectedGuildId?: string) 
     inviteUrl: botInviteUrl(guild.id), // 연동 서버 한정 (재)초대 링크 — 봇 권한/스코프 업데이트용
     channels,
     roles: roleOptions,
-    config: { notifyChannelId: config.notifyChannelId, certChannelId: config.certChannelId },
+    config: {
+      notifyChannelId: config.notifyChannelId,
+      certChannelId: config.certChannelId,
+      certMessage: config.certMessage || DEFAULT_CERT_MESSAGE,
+    },
   };
 }
 
@@ -99,6 +105,7 @@ export type SetupInput = {
   guildId: string;
   notifyChannelId?: string;
   certChannelId?: string;
+  certMessage?: string;
   roleTiers?: Record<string, "admin" | "reviewer" | "member" | "none">;
 };
 
@@ -137,6 +144,7 @@ export async function saveSetup(userId: string, input: SetupInput) {
       guildName: target.name,
       notifyChannelId: input.notifyChannelId ?? config.notifyChannelId,
       certChannelId: input.certChannelId ?? config.certChannelId,
+      certMessage: input.certMessage ?? config.certMessage,
       adminRoleIds,
       reviewerRoleIds,
       memberRoleIds,
@@ -172,8 +180,8 @@ export async function postCertPanel(userId: string, channelId?: string) {
   const okSent = await sendChannelMessage(target, {
     embeds: [
       {
-        title: "🎯 스킬업 인증",
-        description: "아래 버튼을 눌러 스킬업을 인증하세요.\n운영진 승인 후 누적 스킬업과 이번 주 현황에 반영됩니다.",
+        title: "🎯 길드 스킬업 인증",
+        description: config.certMessage || DEFAULT_CERT_MESSAGE,
         color: 0x5865f2,
       },
     ],

@@ -270,16 +270,25 @@ export async function listSubmissionsForReview(opts: {
   // Attach submitter info for web submissions. (user_id has no FK — discord
   // authors may not be site users — so we merge manually instead of embedding.)
   const ids = [...new Set(items.filter((i) => i.source === "web" && i.user_id).map((i) => i.user_id as string))];
-  let userMap: Record<string, { username: string; global_name: string | null; avatar: string | null; blocked: boolean }> = {};
+  let userMap: Record<
+    string,
+    { username: string; global_name: string | null; guild_nick: string | null; avatar: string | null; blocked: boolean }
+  > = {};
   if (ids.length) {
     const { data: users } = await db
       .from("users")
-      .select("discord_id, username, global_name, avatar, blocked")
+      .select("discord_id, username, global_name, guild_nick, avatar, blocked")
       .in("discord_id", ids);
     userMap = Object.fromEntries(
       (users ?? []).map((u) => [
         u.discord_id,
-        { username: u.username, global_name: u.global_name, avatar: u.avatar, blocked: !!u.blocked },
+        {
+          username: u.username,
+          global_name: u.global_name,
+          guild_nick: u.guild_nick,
+          avatar: u.avatar,
+          blocked: !!u.blocked,
+        },
       ]),
     );
   }

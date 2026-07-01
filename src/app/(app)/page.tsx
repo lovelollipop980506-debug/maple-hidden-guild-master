@@ -2,6 +2,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useApi } from "@/lib/client/useApi";
+import { useIsMobile } from "@/lib/client/useIsMobile";
+import { MobileHome } from "@/components/mobile/MobileHome";
 import { Loading } from "@/components/Loading";
 import type { Stats, Notice } from "@/lib/client/types";
 
@@ -13,6 +15,7 @@ function fmtNoticeDate(d: string | null) {
 
 export default function HomePage() {
   const router = useRouter();
+  const mobile = useIsMobile();
   const { data: stats, loading: statsLoading } = useApi<Stats>("/api/v1/stats");
   const { data: notices } = useApi<Notice[]>("/api/v1/notices");
   const [ni, setNi] = useState(0);
@@ -28,6 +31,8 @@ export default function HomePage() {
   const s = stats;
   const pct = s?.weeklyPercent ?? 0;
 
+  if (mobile === null) return <Loading />; // 기기 판정 전
+  if (mobile) return <MobileHome />;
   if (statsLoading && !stats) return <Loading />;
 
   return (

@@ -12,6 +12,7 @@ export type AppConfig = {
   guildName: string;
   notifyChannelId: string;
   certChannelId: string;
+  certMessage: string;
   adminRoleIds: string[];
   reviewerRoleIds: string[];
   memberRoleIds: string[];
@@ -24,6 +25,7 @@ const EMPTY: AppConfig = {
   guildName: "",
   notifyChannelId: "",
   certChannelId: "",
+  certMessage: "",
   adminRoleIds: [],
   reviewerRoleIds: [],
   memberRoleIds: [],
@@ -47,6 +49,7 @@ export const getConfig = cache(async (): Promise<AppConfig> => {
       guildName: data.guild_name ?? "",
       notifyChannelId: data.notify_channel_id ?? "",
       certChannelId: data.cert_channel_id ?? "",
+      certMessage: data.cert_message ?? "",
       adminRoleIds: data.admin_role_ids ?? [],
       reviewerRoleIds: data.reviewer_role_ids ?? [],
       memberRoleIds: data.member_role_ids ?? [],
@@ -74,6 +77,7 @@ export async function saveConfig(
         guild_name: c.guildName || null,
         notify_channel_id: c.notifyChannelId || null,
         cert_channel_id: c.certChannelId || null,
+        cert_message: c.certMessage || null,
         admin_role_ids: c.adminRoleIds,
         reviewer_role_ids: c.reviewerRoleIds,
         member_role_ids: c.memberRoleIds,

@@ -21,7 +21,7 @@ export const dynamic = "force-dynamic";
 type Interaction = {
   type: number;
   data?: { custom_id?: string };
-  member?: { user?: { id: string; username: string; global_name?: string | null } };
+  member?: { nick?: string | null; user?: { id: string; username: string; global_name?: string | null } };
   user?: { id: string; username: string; global_name?: string | null };
 };
 
@@ -58,7 +58,8 @@ export async function POST(req: Request) {
     if (cid.startsWith(SUBMIT_PREFIX)) {
       const author = body.member?.user ?? body.user;
       if (!author) return Response.json(ephemeralReply("제출자를 확인할 수 없어요."));
-      const authorName = author.global_name || author.username;
+      // 서버 닉네임 우선(히든 서버 닉) → 없으면 글로벌/유저명.
+      const authorName = body.member?.nick || author.global_name || author.username;
       try {
         await submitDiscordForm(cid.slice(SUBMIT_PREFIX.length), author.id, authorName, collectSubmitted(body.data));
         return Response.json(ephemeralReply("✅ 제출됐어요. 검토 후 반영됩니다."));

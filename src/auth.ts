@@ -2,7 +2,7 @@ import NextAuth from "next-auth";
 import Discord from "next-auth/providers/discord";
 import { env } from "@/lib/env";
 import {
-  getGuildMemberRoles,
+  getGuildMemberInfo,
   getGuildOwnerId,
   getGuildRoles,
   getManageableGuilds,
@@ -52,9 +52,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
 
         let roles: string[] = [];
+        let guildNick: string | null = null; // 히든 서버 닉네임
         let isAdminByDiscord = false; // owner or Administrator permission
         if (guildId) {
-          roles = await getGuildMemberRoles(account.access_token, guildId);
+          const info = await getGuildMemberInfo(account.access_token, guildId);
+          roles = info.roles;
+          guildNick = info.nick;
           const ownerId = await getGuildOwnerId(guildId);
           const isOwner = !!ownerId && ownerId === discordId;
           const guildRoles = await getGuildRoles(guildId);
@@ -79,6 +82,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 discord_id: discordId,
                 username,
                 global_name: globalName,
+                guild_nick: guildNick,
                 avatar,
                 roles,
                 tier,
