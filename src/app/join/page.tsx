@@ -36,7 +36,9 @@ export default function JoinPage() {
   const router = useRouter();
   const { me } = useMe();
   // 내 제출 이력 (검토 중 여부 + 지난 신청 표시용)
-  const { data: mine, reload: reloadMine } = useApi<MySubmission[]>(me ? "/api/v1/submissions/mine" : null);
+  const { data: mine, error: mineError, reload: reloadMine } = useApi<MySubmission[]>(
+    me ? "/api/v1/submissions/mine" : null,
+  );
   const [nick, setNick] = useState("");
   const [level, setLevel] = useState("");
   const [job, setJob] = useState("");
@@ -52,6 +54,8 @@ export default function JoinPage() {
   }, [me, router]);
 
   if (!me || tierAtLeast(me.tier, "member")) return <Loading />;
+  // 내 신청 이력이 확정되기 전엔 폼/검토중 판단을 미룬다 → 폼이 먼저 깜빡이는 것 방지.
+  if (mine == null && !mineError) return <Loading />;
 
   const joinSubs = (mine ?? []).filter((s) => s.form_key === "join");
   const pending = joinSubs.some((s) => s.status === "pending");
