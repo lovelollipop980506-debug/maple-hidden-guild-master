@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import { useApi } from "@/lib/client/useApi";
 import { apiPost, ApiError } from "@/lib/client/api";
 import { toast } from "@/lib/client/toast";
@@ -15,16 +16,23 @@ export function Pending() {
     "/api/v1/submissions?formKey=skill_cert&status=pending",
   );
   const rows = data?.items ?? [];
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   if (loading && !data) return <Loading />;
 
   async function decide(id: string, decision: "approved" | "rejected") {
+    if (busyId) return; // 중복 클릭 방지
+    setBusyId(id);
     try {
       await apiPost(`/api/v1/submissions/${id}/review`, { decision });
       toast(decision === "approved" ? "승인 완료" : "거절 처리 완료");
       reload(); // 사이드바 stats 는 api 클라이언트가 공통 재검증
     } catch (e) {
-      toast((e as ApiError).message);
+      const err = e as ApiError;
+      toast(err.message);
+      if (err.status === 404) reload(); // 이미 처리된 항목 → 목록 새로고침으로 자기보정
+    } finally {
+      setBusyId(null);
     }
   }
 
@@ -78,10 +86,10 @@ export function Pending() {
                     </td>
                     <td>
                       <div className="admin-actions">
-                        <button className="small-btn approve" onClick={() => decide(r.id, "approved")}>
-                          승인
+                        <button className="small-btn approve" disabled={!!busyId} onClick={() => decide(r.id, "approved")}>
+                          {busyId === r.id ? "처리 중…" : "승인"}
                         </button>
-                        <button className="small-btn reject" onClick={() => decide(r.id, "rejected")}>
+                        <button className="small-btn reject" disabled={!!busyId} onClick={() => decide(r.id, "rejected")}>
                           거절
                         </button>
                       </div>
