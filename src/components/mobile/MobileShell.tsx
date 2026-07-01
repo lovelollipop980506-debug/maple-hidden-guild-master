@@ -6,6 +6,7 @@ import { useMe } from "@/lib/client/useMe";
 import { useApi } from "@/lib/client/useApi";
 import { tierAtLeast, isGuildMember, type Stats } from "@/lib/client/types";
 import { Loading } from "@/components/Loading";
+import { AsyncButton } from "@/components/AsyncButton";
 
 type Tab = { href: string; label: string; ico: string; op?: boolean; badge?: number };
 
@@ -39,9 +40,9 @@ export function MobileShell({ children }: { children: React.ReactNode }) {
         <div className="m-brand">
           히든 <span>HIDDEN</span>
         </div>
-        <button className="m-logout" onClick={() => signOut({ callbackUrl: "/login" })}>
+        <AsyncButton className="m-logout" onClick={() => signOut({ callbackUrl: "/login" })}>
           로그아웃
-        </button>
+        </AsyncButton>
       </header>
 
       <main className="m-main">{children}</main>

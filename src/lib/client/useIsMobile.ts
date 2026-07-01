@@ -2,17 +2,15 @@
 import { useEffect, useState } from "react";
 
 /**
- * 모바일 여부(뷰포트 폭 기준). SSR/최초 페인트에는 null → 셸이 스피너를 띄운 뒤 확정.
- * 반응형 리플로우가 아니라, 이 값으로 데스크톱/모바일 컴포넌트 자체를 분기한다.
+ * 실제 모바일 기기 여부 — 뷰포트 폭이 아니라 User-Agent 기준.
+ * → PC에서 창을 좁혀도 모바일로 안 바뀐다(데스크톱 유지, 모니터 반응형만). 진짜 폰에서만 모바일 UI.
+ * SSR/최초 페인트에는 null → 셸이 스피너를 띄운 뒤 확정(하이드레이션 안전).
  */
-export function useIsMobile(query = "(max-width: 767px)"): boolean | null {
+export function useIsMobile(): boolean | null {
   const [mobile, setMobile] = useState<boolean | null>(null);
   useEffect(() => {
-    const mq = window.matchMedia(query);
-    const update = () => setMobile(mq.matches);
-    update();
-    mq.addEventListener("change", update);
-    return () => mq.removeEventListener("change", update);
-  }, [query]);
+    const ua = navigator.userAgent || "";
+    setMobile(/Mobi|Android|iPhone|iPod|Windows Phone|BlackBerry|IEMobile/i.test(ua));
+  }, []);
   return mobile;
 }

@@ -4,6 +4,7 @@ import { useApi } from "@/lib/client/useApi";
 import { apiPut, apiPost, ApiError } from "@/lib/client/api";
 import { toast } from "@/lib/client/toast";
 import { Loading } from "@/components/Loading";
+import { AsyncButton } from "@/components/AsyncButton";
 
 type SetupOptions = {
   setupCompleted: boolean;
@@ -25,8 +26,6 @@ export function SetupPanel() {
   const [notifyCh, setNotifyCh] = useState("");
   const [certCh, setCertCh] = useState("");
   const [certMsg, setCertMsg] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [posting, setPosting] = useState(false);
 
   useEffect(() => {
     if (!data) return;
@@ -61,7 +60,6 @@ export function SetupPanel() {
   }
 
   async function save() {
-    setBusy(true);
     try {
       const roleTiers = Object.fromEntries(data!.roles.map((r) => [r.id, reviewers.has(r.id) ? "reviewer" : "none"]));
       await apiPut("/api/v1/setup", {
@@ -74,21 +72,16 @@ export function SetupPanel() {
       toast("설정을 저장했습니다. 다시 로그인하면 적용됩니다.");
     } catch (e) {
       toast((e as ApiError).message);
-    } finally {
-      setBusy(false);
     }
   }
 
   async function postCertButton() {
     if (!certCh) return toast("인증 채널을 먼저 선택하세요.");
-    setPosting(true);
     try {
       await apiPost("/api/v1/setup/cert-panel", { channelId: certCh });
       toast("인증 채널에 스킬업 인증 버튼을 올렸습니다.");
     } catch (e) {
       toast((e as ApiError).message);
-    } finally {
-      setPosting(false);
     }
   }
 
@@ -164,9 +157,9 @@ export function SetupPanel() {
                   </option>
                 ))}
               </select>
-              <button className="more" style={{ flexShrink: 0, height: 42, whiteSpace: "nowrap" }} onClick={postCertButton} disabled={posting || !certCh}>
-                {posting ? <span className="btn-spinner" /> : "인증 버튼 올리기"}
-              </button>
+              <AsyncButton className="more" style={{ flexShrink: 0, height: 42, whiteSpace: "nowrap" }} onClick={postCertButton} disabled={!certCh}>
+                인증 버튼 올리기
+              </AsyncButton>
             </div>
             <label className="tiny" style={{ display: "block", margin: "12px 0 6px", fontWeight: 800 }}>인증 안내 문구</label>
             <textarea
@@ -208,9 +201,9 @@ export function SetupPanel() {
           </div>
         )}
         <div className="modal-actions">
-          <button className="btn-save" onClick={save} disabled={busy}>
-            {busy ? <span className="btn-spinner" /> : "설정 저장"}
-          </button>
+          <AsyncButton className="btn-save" onClick={save}>
+            설정 저장
+          </AsyncButton>
         </div>
       </div>
     </div>

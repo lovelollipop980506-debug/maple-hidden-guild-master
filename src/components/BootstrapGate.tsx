@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { signOut, useSession } from "next-auth/react";
 import { useApi } from "@/lib/client/useApi";
 import { Loading } from "@/components/Loading";
+import { AsyncButton } from "@/components/AsyncButton";
 
 type BootstrapStatus = {
   guildId: string;
@@ -104,9 +105,9 @@ export function BootstrapGate({ children }: { children: React.ReactNode }) {
             </>
           )}
 
-          <button className="boot-logout" onClick={() => signOut({ callbackUrl: "/login" })}>
+          <AsyncButton className="boot-logout" onClick={() => signOut({ callbackUrl: "/login" })}>
             로그아웃
-          </button>
+          </AsyncButton>
         </div>
       </div>
     );

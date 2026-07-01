@@ -1,10 +1,10 @@
 "use client";
-import { useState } from "react";
 import { useApi } from "@/lib/client/useApi";
 import { apiPost, ApiError } from "@/lib/client/api";
 import { toast } from "@/lib/client/toast";
 import { SKILL_LABELS } from "@/lib/client/maple";
 import { Loading } from "@/components/Loading";
+import { AsyncButton } from "@/components/AsyncButton";
 import type { ListResult, ReviewSubmission } from "@/lib/client/types";
 
 function fmt(iso: string) {
@@ -16,13 +16,10 @@ export function Pending() {
     "/api/v1/submissions?formKey=skill_cert&status=pending",
   );
   const rows = data?.items ?? [];
-  const [busyId, setBusyId] = useState<string | null>(null);
 
   if (loading && !data) return <Loading />;
 
   async function decide(id: string, decision: "approved" | "rejected") {
-    if (busyId) return; // 중복 클릭 방지
-    setBusyId(id);
     try {
       await apiPost(`/api/v1/submissions/${id}/review`, { decision });
       toast(decision === "approved" ? "승인 완료" : "거절 처리 완료");
@@ -31,8 +28,6 @@ export function Pending() {
       const err = e as ApiError;
       toast(err.message);
       if (err.status === 404) reload(); // 이미 처리된 항목 → 목록 새로고침으로 자기보정
-    } finally {
-      setBusyId(null);
     }
   }
 
@@ -86,12 +81,12 @@ export function Pending() {
                     </td>
                     <td>
                       <div className="admin-actions">
-                        <button className="small-btn approve" disabled={!!busyId} onClick={() => decide(r.id, "approved")}>
-                          {busyId === r.id ? <span className="btn-spinner" /> : "승인"}
-                        </button>
-                        <button className="small-btn reject" disabled={!!busyId} onClick={() => decide(r.id, "rejected")}>
+                        <AsyncButton className="small-btn approve" onClick={() => decide(r.id, "approved")}>
+                          승인
+                        </AsyncButton>
+                        <AsyncButton className="small-btn reject" onClick={() => decide(r.id, "rejected")}>
                           거절
-                        </button>
+                        </AsyncButton>
                       </div>
                     </td>
                   </tr>

@@ -1,9 +1,9 @@
 "use client";
-import { useState } from "react";
 import { useApi } from "@/lib/client/useApi";
 import { apiPost, ApiError } from "@/lib/client/api";
 import { toast } from "@/lib/client/toast";
 import { Loading } from "@/components/Loading";
+import { AsyncButton } from "@/components/AsyncButton";
 import type { ListResult, ReviewSubmission } from "@/lib/client/types";
 
 function fmt(iso: string) {
@@ -14,13 +14,10 @@ function fmt(iso: string) {
 export function Applications() {
   const { data, loading, reload } = useApi<ListResult<ReviewSubmission>>("/api/v1/submissions?formKey=join");
   const rows = data?.items ?? [];
-  const [busyId, setBusyId] = useState<string | null>(null);
 
   if (loading && !data) return <Loading />;
 
   async function decide(id: string, decision: "approved" | "rejected") {
-    if (busyId) return; // 중복 클릭 방지
-    setBusyId(id);
     try {
       await apiPost(`/api/v1/submissions/${id}/review`, { decision });
       toast(decision === "approved" ? "가입 승인했습니다" : "가입 신청을 반려했습니다");
@@ -29,8 +26,6 @@ export function Applications() {
       const err = e as ApiError;
       toast(err.message);
       if (err.status === 404) reload(); // 이미 처리된 항목 → 목록 새로고침으로 자기보정
-    } finally {
-      setBusyId(null);
     }
   }
 
@@ -100,12 +95,12 @@ export function Applications() {
                       <div className="admin-actions">
                         {r.status === "pending" ? (
                           <>
-                            <button className="small-btn approve" disabled={!!busyId} onClick={() => decide(r.id, "approved")}>
-                              {busyId === r.id ? <span className="btn-spinner" /> : "승인"}
-                            </button>
-                            <button className="small-btn reject" disabled={!!busyId} onClick={() => decide(r.id, "rejected")}>
+                            <AsyncButton className="small-btn approve" onClick={() => decide(r.id, "approved")}>
+                              승인
+                            </AsyncButton>
+                            <AsyncButton className="small-btn reject" onClick={() => decide(r.id, "rejected")}>
                               반려
-                            </button>
+                            </AsyncButton>
                           </>
                         ) : r.status === "approved" ? (
                           <span className="badge ok">승인</span>
@@ -115,18 +110,18 @@ export function Applications() {
                           </span>
                         )}
                         {r.user_id && (
-                          <button
+                          <AsyncButton
                             className="small-btn block"
                             onClick={() =>
                               toggleBlock(
                                 r.user_id!,
-                                r.user?.global_name || r.user?.username || "이 계정",
+                                r.user?.guild_nick || r.user?.global_name || r.user?.username || "이 계정",
                                 !r.user?.blocked,
                               )
                             }
                           >
                             {r.user?.blocked ? "차단 해제" : "차단"}
-                          </button>
+                          </AsyncButton>
                         )}
                       </div>
                     </td>

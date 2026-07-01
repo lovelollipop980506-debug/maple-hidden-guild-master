@@ -6,6 +6,7 @@ import { useMe } from "@/lib/client/useMe";
 import { useApi } from "@/lib/client/useApi";
 import { tierAtLeast, isGuildMember, type Stats } from "@/lib/client/types";
 import { Loading } from "@/components/Loading";
+import { AsyncButton } from "@/components/AsyncButton";
 
 const MAIN = [
   { href: "/", label: "홈" },
@@ -83,12 +84,12 @@ export function Shell({ children }: { children: React.ReactNode }) {
               <span style={{ color: "#cbd5df", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {me.name}
               </span>
-              <button
+              <AsyncButton
                 onClick={() => signOut({ callbackUrl: "/login" })}
                 style={{ border: 0, background: "rgba(255,255,255,.1)", color: "#cbd5df", borderRadius: 6, padding: "5px 9px" }}
               >
                 로그아웃
-              </button>
+              </AsyncButton>
             </div>
           )}
           <div style={{ marginTop: 10 }}>© 2026 히든 길드</div>

@@ -4,6 +4,7 @@ import { useApi } from "@/lib/client/useApi";
 import { apiPost, apiPut, apiDelete, ApiError } from "@/lib/client/api";
 import { toast } from "@/lib/client/toast";
 import { Loading } from "@/components/Loading";
+import { AsyncButton } from "@/components/AsyncButton";
 import type { Notice } from "@/lib/client/types";
 
 export function NoticesAdmin() {
@@ -13,7 +14,6 @@ export function NoticesAdmin() {
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
-  const [busy, setBusy] = useState(false);
 
   if (loading && !data) return <Loading />;
 
@@ -27,7 +27,6 @@ export function NoticesAdmin() {
   async function save() {
     if (!title.trim()) return toast("공지 제목을 입력하세요");
     if (!body.trim()) return toast("공지 내용을 입력하세요");
-    setBusy(true);
     try {
       const payload = { title: title.trim(), body: body.trim(), noticeDate: date };
       if (editId) await apiPut(`/api/v1/notices/${editId}`, payload);
@@ -37,8 +36,6 @@ export function NoticesAdmin() {
       reload();
     } catch (e) {
       toast((e as ApiError).message);
-    } finally {
-      setBusy(false);
     }
   }
 
@@ -90,9 +87,9 @@ export function NoticesAdmin() {
           <button className="btn-light" onClick={clear}>
             입력 초기화
           </button>
-          <button className="btn-save" onClick={save} disabled={busy}>
-            {busy ? <span className="btn-spinner" /> : editId ? "공지 수정" : "공지 저장"}
-          </button>
+          <AsyncButton className="btn-save" onClick={save}>
+            {editId ? "공지 수정" : "공지 저장"}
+          </AsyncButton>
         </div>
       </div>
 
@@ -111,9 +108,9 @@ export function NoticesAdmin() {
                 <button className="small-btn edit" onClick={() => edit(n)}>
                   수정
                 </button>
-                <button className="small-btn reject" onClick={() => del(n)}>
+                <AsyncButton className="small-btn reject" onClick={() => del(n)}>
                   삭제
-                </button>
+                </AsyncButton>
               </div>
             </div>
           ))

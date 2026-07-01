@@ -10,6 +10,7 @@ import { STATUS_LABELS } from "@/lib/client/maple";
 import { isGuildMember, type MySubmission } from "@/lib/client/types";
 import { Loading } from "@/components/Loading";
 import { BootstrapGate } from "@/components/BootstrapGate";
+import { AsyncButton } from "@/components/AsyncButton";
 
 function fmtDate(iso: string) {
   const d = new Date(iso);
@@ -46,7 +47,6 @@ export default function JoinPage() {
   const [boss, setBoss] = useState("");
   const [ignore, setIgnore] = useState("");
   const [slots, setSlots] = useState<string[]>([]);
-  const [busy, setBusy] = useState(false);
 
   // 이미 길드원(역할 보유 또는 가입 승인)이면 가입 신청 불필요 → 홈으로.
   useEffect(() => {
@@ -73,7 +73,6 @@ export default function JoinPage() {
       const n = Number(level);
       if (!Number.isInteger(n) || n < 1 || n > 200) return toast("레벨은 1~200 사이로 입력하세요");
     }
-    setBusy(true);
     try {
       // 선택 순서가 아닌 정의 순서(평일→주말, 새벽→저녁)로 정렬해 저장
       const ordered = DAYS.flatMap((d) => TIMES.map((t) => `${d} ${t.key}`)).filter((s) => slots.includes(s));
@@ -89,8 +88,6 @@ export default function JoinPage() {
       await reloadMine(); // 검토 중 화면으로 전환
     } catch (e) {
       toast((e as ApiError).message || "신청에 실패했습니다.");
-    } finally {
-      setBusy(false);
     }
   }
 
@@ -103,13 +100,13 @@ export default function JoinPage() {
             <h2>가입 신청</h2>
             <p>아직 길드원이 아니에요. 신청서를 제출하면 운영진 승인 후 입장할 수 있습니다.</p>
           </div>
-          <button
+          <AsyncButton
             className="more"
             style={{ flexShrink: 0, whiteSpace: "nowrap" }}
             onClick={() => signOut({ callbackUrl: "/login" })}
           >
             로그아웃
-          </button>
+          </AsyncButton>
         </div>
 
         {me.blocked ? (
@@ -194,9 +191,9 @@ export default function JoinPage() {
                 ))}
               </div>
             </div>
-            <button className="submit" onClick={submit} disabled={busy}>
-              {busy ? <span className="btn-spinner" /> : "가입 신청하기"}
-            </button>
+            <AsyncButton className="submit" onClick={submit}>
+              가입 신청하기
+            </AsyncButton>
           </>
         )}
 

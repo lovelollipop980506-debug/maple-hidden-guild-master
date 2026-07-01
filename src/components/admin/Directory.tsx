@@ -6,6 +6,7 @@ import { toast } from "@/lib/client/toast";
 import { SKILL_KEYS, SKILL_LABELS, TIER_LABELS } from "@/lib/client/maple";
 import type { ListResult, GuildMember } from "@/lib/client/types";
 import { Loading } from "@/components/Loading";
+import { AsyncButton } from "@/components/AsyncButton";
 
 export function Directory() {
   const [q, setQ] = useState("");
@@ -15,7 +16,6 @@ export function Directory() {
   const [skill, setSkill] = useState<string>(SKILL_KEYS[0]);
   const [count, setCount] = useState("");
   const [memo, setMemo] = useState("");
-  const [busy, setBusy] = useState(false);
 
   const params = new URLSearchParams();
   if (q) params.set("q", q);
@@ -35,7 +35,6 @@ export function Directory() {
   async function addCert(discordId: string) {
     const c = Number(count);
     if (!Number.isInteger(c) || c < 1 || c > 20) return toast("스킬업 횟수는 1~20 사이로 입력하세요");
-    setBusy(true);
     try {
       await apiPost(`/api/v1/members/${discordId}/certs`, { skill, count: c, memo });
       toast("스킬업 인증을 등록했습니다");
@@ -44,14 +43,11 @@ export function Directory() {
       reload();
     } catch (e) {
       toast((e as ApiError).message);
-    } finally {
-      setBusy(false);
     }
   }
 
   async function removeMember(discordId: string, nick: string) {
     if (!confirm(`${nick} 님을 삭제할까요?\n제출 이력도 함께 삭제되며 되돌릴 수 없습니다.`)) return;
-    setBusy(true);
     try {
       await apiDelete(`/api/v1/members/${discordId}`);
       toast("멤버를 삭제했습니다");
@@ -59,8 +55,6 @@ export function Directory() {
       reload();
     } catch (e) {
       toast((e as ApiError).message);
-    } finally {
-      setBusy(false);
     }
   }
 
@@ -178,9 +172,9 @@ export function Directory() {
                                   value={memo}
                                   onChange={(e) => setMemo(e.target.value)}
                                 />
-                                <button className="small-btn approve" disabled={busy} onClick={() => addCert(m.discordId)}>
-                                  {busy ? <span className="btn-spinner" /> : "등록"}
-                                </button>
+                                <AsyncButton className="small-btn approve" onClick={() => addCert(m.discordId)}>
+                                  등록
+                                </AsyncButton>
                               </div>
                               <p className="tiny" style={{ marginTop: 6 }}>
                                 승인된 인증으로 즉시 누적·이번 주 현황에 반영됩니다. (증빙 불요)
@@ -188,13 +182,12 @@ export function Directory() {
                             </div>
 
                             <div style={{ borderTop: "1px solid var(--line)", paddingTop: 14 }}>
-                              <button
+                              <AsyncButton
                                 className="reset-btn"
-                                disabled={busy}
                                 onClick={() => removeMember(m.discordId, m.nick)}
                               >
                                 멤버 삭제
-                              </button>
+                              </AsyncButton>
                               <span className="tiny" style={{ marginLeft: 10 }}>
                                 로스터에서 제거하고 제출 이력도 삭제합니다. (되돌릴 수 없음)
                               </span>
