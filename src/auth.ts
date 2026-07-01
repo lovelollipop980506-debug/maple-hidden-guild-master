@@ -3,10 +3,10 @@ import Discord from "next-auth/providers/discord";
 import { env } from "@/lib/env";
 import {
   getGuildMemberInfo,
+  getGuildMemberByBot,
   getGuildOwnerId,
   getGuildRoles,
   getManageableGuilds,
-  getMemberRoles,
   getBotGuilds,
 } from "@/lib/discord";
 import { getConfig } from "@/lib/config";
@@ -120,15 +120,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           if (guildId) {
             const bots = await getBotGuilds();
             if (bots.some((g) => g.id === guildId)) {
-              roles = (await getMemberRoles(guildId, did)) ?? [];
-              const ownerId = await getGuildOwnerId(guildId);
-              const guildRoles = await getGuildRoles(guildId);
-              isOwner = hasAdmin(computePermissions(roles, guildRoles, guildId, !!ownerId && ownerId === did));
-              tier = resolveTier(
-                roles,
-                { admin: config.adminRoleIds, reviewer: config.reviewerRoleIds, member: config.memberRoleIds },
-                isOwner,
-              );
+              const member = await getGuildMemberByBot(guildId, did);
+              if (member) {
+                roles = member.roles;
+                const ownerId = await getGuildOwnerId(guildId);
+                const guildRoles = await getGuildRoles(guildId);
+                isOwner = hasAdmin(computePermissions(roles, guildRoles, guildId, !!ownerId && ownerId === did));
+                tier = resolveTier(
+                  roles,
+                  { admin: config.adminRoleIds, reviewer: config.reviewerRoleIds, member: config.memberRoleIds },
+                  isOwner,
+                );
+                // 재로그인 없이도 DB에 서버 닉/등급/역할 최신화(기존 닉네임 backfill).
+                try {
+                  await supabaseAdmin()
+                    .from("users")
+                    .update({ guild_nick: member.nick, tier, roles })
+                    .eq("discord_id", did);
+                } catch {
+                  /* best-effort */
+                }
+              }
             }
           }
           token.tier = tier;

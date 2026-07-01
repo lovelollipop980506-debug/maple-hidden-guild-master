@@ -147,10 +147,20 @@ export async function getGuildOwnerId(guildId: string): Promise<string | null> {
 
 /** A member's assigned role IDs in a guild (via bot). null if not a member. */
 export async function getMemberRoles(guildId: string, userId: string): Promise<string[] | null> {
+  const m = await getGuildMemberByBot(guildId, userId);
+  return m ? m.roles : null;
+}
+
+/** 봇 토큰으로 멤버의 역할 + 서버 닉네임을 함께 조회. null = 멤버 아님/조회 실패. */
+export async function getGuildMemberByBot(
+  guildId: string,
+  userId: string,
+): Promise<{ roles: string[]; nick: string | null } | null> {
+  if (!guildId || !userId) return null;
   const res = await botFetch(`/guilds/${guildId}/members/${userId}`);
   if (!res.ok) return null;
-  const data = (await res.json()) as { roles?: string[] };
-  return data.roles ?? [];
+  const data = (await res.json()) as { roles?: string[]; nick?: string | null };
+  return { roles: data.roles ?? [], nick: data.nick ?? null };
 }
 
 /**
