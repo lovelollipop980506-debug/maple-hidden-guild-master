@@ -35,11 +35,15 @@ async function runOnApprove(form: Form, userId: string | null, answers: Record<s
     if (Object.keys(patch).length) await db.from("users").update(patch).eq("discord_id", userId);
   }
 
-  if (form.onApprove.grantRoleId) {
+  // 가입(멤버십) 폼 승인 → 멤버 승격. 디스코드 역할이 없어도 앱 접근이 되도록 member_status로 표시.
+  if (form.key === "join") {
     await db
       .from("users")
       .update({ member_status: "approved", joined_at: new Date().toISOString() })
       .eq("discord_id", userId);
+  }
+  // 부여할 디스코드 역할이 설정돼 있으면 역할도 grant(설정 시).
+  if (form.onApprove.grantRoleId) {
     await addRole(config.guildId, userId, form.onApprove.grantRoleId);
   }
 
@@ -329,7 +333,7 @@ export async function reviewSubmission(
     await runOnApprove(form, userId, (sub.answers ?? {}) as Record<string, unknown>, reviewerId);
     if (userId) await notifyUser(userId, `✅ "${form.title}" 제출이 승인되었습니다.`, config.notifyChannelId);
   } else {
-    if (form.onApprove.grantRoleId && userId) {
+    if (form.key === "join" && userId) {
       await db.from("users").update({ member_status: "rejected" }).eq("discord_id", userId);
     }
     if (userId) {

@@ -6,6 +6,14 @@ export function tierAtLeast(tier: Tier | undefined | null, required: Tier): bool
   return !!tier && TIER_RANK[tier] >= TIER_RANK[required];
 }
 
+/**
+ * 앱 접근 가능한 길드원 여부. 디스코드 역할(member 이상 tier) 또는 가입 승인(member_status)로 판정.
+ * → 디스코드 역할이 없는 승인 멤버도 앱에 들어올 수 있게.
+ */
+export function isGuildMember(me?: { tier?: Tier; memberStatus?: string } | null): boolean {
+  return tierAtLeast(me?.tier, "member") || me?.memberStatus === "approved";
+}
+
 export interface Me {
   discordId: string;
   name: string | null;

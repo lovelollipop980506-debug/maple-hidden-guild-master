@@ -4,7 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { useMe } from "@/lib/client/useMe";
 import { useApi } from "@/lib/client/useApi";
-import { tierAtLeast, type Stats } from "@/lib/client/types";
+import { tierAtLeast, isGuildMember, type Stats } from "@/lib/client/types";
 import { Loading } from "@/components/Loading";
 
 type Tab = { href: string; label: string; ico: string; op?: boolean; badge?: number };
@@ -16,7 +16,7 @@ export function MobileShell({ children }: { children: React.ReactNode }) {
   const { me } = useMe();
   const { data: stats } = useApi<Stats>("/api/v1/stats");
 
-  const isMember = tierAtLeast(me?.tier, "member");
+  const isMember = isGuildMember(me);
   const isOp = tierAtLeast(me?.tier, "reviewer");
   const pending = (stats?.pendingApplications ?? 0) + (stats?.pendingCerts ?? 0);
 

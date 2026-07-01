@@ -68,7 +68,8 @@ export async function listMembers(opts: { q?: string; cert?: string } = {}) {
       .select(
         "discord_id, username, global_name, guild_nick, avatar, tier, roles, character_name, job, level, joined_at",
       )
-      .in("tier", MEMBER_TIERS),
+      // 디스코드 역할 보유(member 이상) 또는 가입 승인(member_status=approved) 사용자
+      .or(`tier.in.(${MEMBER_TIERS.join(",")}),member_status.eq.approved`),
     aggregateByUser(),
   ]);
 
@@ -92,7 +93,8 @@ export async function listMembers(opts: { q?: string; cert?: string } = {}) {
       job: (u.job as string) ?? null,
       level: (u.level as number) ?? null,
       avatar: (u.avatar as string) ?? null,
-      tier: u.tier as string,
+      // 승인 멤버지만 디스코드 역할이 없어 tier=guest인 경우 멤버로 표시
+      tier: MEMBER_TIERS.includes(u.tier as string) ? (u.tier as string) : "member",
       roles: (u.roles as string[]) ?? [],
       joinedAt: (u.joined_at as string) ?? null,
       skills,

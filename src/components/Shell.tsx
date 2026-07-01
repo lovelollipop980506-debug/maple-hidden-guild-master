@@ -4,7 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { useMe } from "@/lib/client/useMe";
 import { useApi } from "@/lib/client/useApi";
-import { tierAtLeast, type Stats } from "@/lib/client/types";
+import { tierAtLeast, isGuildMember, type Stats } from "@/lib/client/types";
 import { Loading } from "@/components/Loading";
 
 const MAIN = [
@@ -30,8 +30,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const isAdmin = tierAtLeast(me?.tier, "admin");
   const active = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
 
-  // 길드원(역할 보유)이 아니면(=guest) 가입 신청 페이지로 보낸다.
-  const isMember = tierAtLeast(me?.tier, "member");
+  // 길드원(역할 보유 또는 가입 승인)이 아니면 가입 신청 페이지로 보낸다.
+  const isMember = isGuildMember(me);
   useEffect(() => {
     if (me && !isMember) router.replace("/join");
   }, [me, isMember, router]);

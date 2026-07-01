@@ -7,7 +7,7 @@ import { useApi } from "@/lib/client/useApi";
 import { apiPostForm, ApiError } from "@/lib/client/api";
 import { toast } from "@/lib/client/toast";
 import { STATUS_LABELS } from "@/lib/client/maple";
-import { tierAtLeast, type MySubmission } from "@/lib/client/types";
+import { isGuildMember, type MySubmission } from "@/lib/client/types";
 import { Loading } from "@/components/Loading";
 import { BootstrapGate } from "@/components/BootstrapGate";
 
@@ -48,12 +48,12 @@ export default function JoinPage() {
   const [slots, setSlots] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
 
-  // 이미 길드원(역할 보유)이면 가입 신청 불필요 → 홈으로.
+  // 이미 길드원(역할 보유 또는 가입 승인)이면 가입 신청 불필요 → 홈으로.
   useEffect(() => {
-    if (me && tierAtLeast(me.tier, "member")) router.replace("/");
+    if (me && isGuildMember(me)) router.replace("/");
   }, [me, router]);
 
-  if (!me || tierAtLeast(me.tier, "member")) return <Loading />;
+  if (!me || isGuildMember(me)) return <Loading />;
   // 내 신청 이력이 확정되기 전엔 폼/검토중 판단을 미룬다 → 폼이 먼저 깜빡이는 것 방지.
   if (mine == null && !mineError) return <Loading />;
 
