@@ -63,11 +63,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           const guildRoles = await getGuildRoles(guildId);
           isAdminByDiscord = hasAdmin(computePermissions(roles, guildRoles, guildId, isOwner));
         }
-        const tier = resolveTier(
-          roles,
-          { admin: config.adminRoleIds, reviewer: config.reviewerRoleIds, member: config.memberRoleIds },
-          isAdminByDiscord,
-        );
+        // 슈퍼유저는 가입/역할 여부와 무관하게 항상 길드 마스터(admin).
+        const superuser = env.superuserIds.includes(discordId);
+        const tier: Tier = superuser
+          ? "admin"
+          : resolveTier(
+              roles,
+              { admin: config.adminRoleIds, reviewer: config.reviewerRoleIds, member: config.memberRoleIds },
+              isAdminByDiscord,
+            );
+        const ownerFlag = superuser || isAdminByDiscord;
 
         const username = (profile.username as string) ?? "unknown";
         const globalName = (profile.global_name as string | null) ?? null;
@@ -97,7 +102,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.discordId = discordId;
         token.tier = tier;
         token.roles = roles;
-        token.isOwner = isAdminByDiscord;
+        token.isOwner = ownerFlag;
         token.accessToken = account.access_token;
         token.tierCheckedAt = Date.now();
         return token;
@@ -142,6 +147,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 }
               }
             }
+          }
+          // 슈퍼유저는 가입/역할 여부와 무관하게 항상 admin (재검증에서도 강등 안 됨).
+          if (env.superuserIds.includes(did)) {
+            tier = "admin";
+            isOwner = true;
           }
           token.tier = tier;
           token.roles = roles;

@@ -73,9 +73,16 @@ export async function submitForm(formKey: string, userId: string, tier: Tier, fo
 
   const db = supabaseAdmin();
 
-  // 차단된 디스코드 계정은 제출 자체를 막는다.
-  const { data: blocker } = await db.from("users").select("blocked").eq("discord_id", userId).maybeSingle();
-  if (blocker?.blocked) throw new ApiError("forbidden", "차단된 계정입니다. 운영진에게 문의하세요.", 403);
+  // 차단된 디스코드 계정은 제출 자체를 막는다. 이미 가입 승인된 멤버는 재신청 불가.
+  const { data: uRow } = await db
+    .from("users")
+    .select("blocked, member_status")
+    .eq("discord_id", userId)
+    .maybeSingle();
+  if (uRow?.blocked) throw new ApiError("forbidden", "차단된 계정입니다. 운영진에게 문의하세요.", 403);
+  if (formKey === "join" && uRow?.member_status === "approved") {
+    throw new ApiError("conflict", "이미 가입이 승인된 멤버입니다.", 409);
+  }
 
   const { data: dup } = await db
     .from("form_submissions")

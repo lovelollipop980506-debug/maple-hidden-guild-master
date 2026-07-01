@@ -19,6 +19,12 @@ export const env = {
   // 동작 → 다른 길드로 부트스트랩/셋업/탈취 불가. 길드 ID는 비-시크릿이라 납품 fail-safe
   // 기본값을 박아 둔다(누가 app_config를 비워도 잠금은 유지). env(GUILD_ID)로 덮어쓰기 가능.
   lockedGuildId: process.env.GUILD_ID ?? "1519043102512513124",
+  // 슈퍼유저 디스코드 ID 목록(콤마 구분). 가입/역할 여부와 무관하게 항상 길드 마스터(admin).
+  // env로만 관리(소스 하드코딩 X). 예: SUPERUSER_DISCORD_IDS=123,456
+  superuserIds: (process.env.SUPERUSER_DISCORD_IDS ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean),
   discord: {
     clientId: required("DISCORD_CLIENT_ID"), // also the Application ID
     clientSecret: required("DISCORD_CLIENT_SECRET"),
