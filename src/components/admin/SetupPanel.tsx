@@ -162,7 +162,7 @@ export function SetupPanel() {
                 ))}
               </select>
               <button className="more" style={{ flexShrink: 0, height: 42, whiteSpace: "nowrap" }} onClick={postCertButton} disabled={posting || !certCh}>
-                {posting ? "게시 중…" : "인증 버튼 올리기"}
+                {posting ? <span className="btn-spinner" /> : "인증 버튼 올리기"}
               </button>
             </div>
             <p className="tiny" style={{ marginTop: 6 }}>
@@ -198,7 +198,7 @@ export function SetupPanel() {
         )}
         <div className="modal-actions">
           <button className="btn-save" onClick={save} disabled={busy}>
-            {busy ? "저장 중…" : "설정 저장"}
+            {busy ? <span className="btn-spinner" /> : "설정 저장"}
           </button>
         </div>
       </div>

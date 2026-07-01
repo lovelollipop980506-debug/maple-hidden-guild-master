@@ -91,7 +91,7 @@ export function NoticesAdmin() {
             입력 초기화
           </button>
           <button className="btn-save" onClick={save} disabled={busy}>
-            {busy ? "저장 중…" : editId ? "공지 수정" : "공지 저장"}
+            {busy ? <span className="btn-spinner" /> : editId ? "공지 수정" : "공지 저장"}
           </button>
         </div>
       </div>

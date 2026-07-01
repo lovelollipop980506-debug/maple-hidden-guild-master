@@ -87,7 +87,7 @@ export function Pending() {
                     <td>
                       <div className="admin-actions">
                         <button className="small-btn approve" disabled={!!busyId} onClick={() => decide(r.id, "approved")}>
-                          {busyId === r.id ? "처리 중…" : "승인"}
+                          {busyId === r.id ? <span className="btn-spinner" /> : "승인"}
                         </button>
                         <button className="small-btn reject" disabled={!!busyId} onClick={() => decide(r.id, "rejected")}>
                           거절
