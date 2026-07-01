@@ -91,6 +91,7 @@ create table if not exists public.app_config (
   guild_id          text,
   guild_name        text,
   notify_channel_id text,
+  cert_channel_id   text,                            -- 스킬업 인증 버튼이 게시되는 채널
   admin_role_ids    text[] not null default '{}',
   reviewer_role_ids text[] not null default '{}',
   member_role_ids   text[] not null default '{}',

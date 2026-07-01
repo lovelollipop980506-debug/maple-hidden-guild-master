@@ -7,11 +7,15 @@ import {
   listGuildChannels,
   listGuildRoles,
   botInviteUrl,
+  sendChannelMessage,
 } from "@/lib/discord";
+import { OPEN_PREFIX } from "@/lib/discord-interactions";
 import { suggestTier } from "@/lib/permissions";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { ApiError } from "@/lib/api/respond";
 import { env } from "@/lib/env";
+
+const CERT_FORM_KEY = "skill_cert";
 
 /**
  * 부트스트랩 상태 — 잠금(또는 설정) 길드에 봇이 들어와 있는지.
@@ -87,13 +91,14 @@ export async function getSetupOptions(userId: string, selectedGuildId?: string) 
     inviteUrl: botInviteUrl(guild.id), // 연동 서버 한정 (재)초대 링크 — 봇 권한/스코프 업데이트용
     channels,
     roles: roleOptions,
-    config: { notifyChannelId: config.notifyChannelId },
+    config: { notifyChannelId: config.notifyChannelId, certChannelId: config.certChannelId },
   };
 }
 
 export type SetupInput = {
   guildId: string;
   notifyChannelId?: string;
+  certChannelId?: string;
   roleTiers?: Record<string, "admin" | "reviewer" | "member" | "none">;
 };
 
@@ -124,11 +129,14 @@ export async function saveSetup(userId: string, input: SetupInput) {
     else if (tier === "member") memberRoleIds.push(roleId);
   }
 
+  // 제공 안 된 채널 값은 기존 설정을 유지(다른 항목만 저장해도 안 지워지게).
+  const config = await getConfig();
   const { error } = await saveConfig(
     {
       guildId,
       guildName: target.name,
-      notifyChannelId: input.notifyChannelId ?? "",
+      notifyChannelId: input.notifyChannelId ?? config.notifyChannelId,
+      certChannelId: input.certChannelId ?? config.certChannelId,
       adminRoleIds,
       reviewerRoleIds,
       memberRoleIds,
@@ -143,6 +151,48 @@ export async function saveSetup(userId: string, input: SetupInput) {
     action: "setup.save",
     target_type: "app_config",
     target_id: guildId,
+  });
+  return { ok: true };
+}
+
+/**
+ * 인증 채널에 "스킬업 인증하기" 버튼 메시지를 게시한다. 버튼 클릭 → 모달 → 제출은
+ * 기존 Interactions 엔드포인트가 처리(custom_id `form_open:skill_cert`).
+ * 서버 관리 권한자만 가능. 채널 인자가 없으면 저장된 인증 채널을 사용.
+ */
+export async function postCertPanel(userId: string, channelId?: string) {
+  const config = await getConfig();
+  const guildId = env.lockedGuildId || config.guildId;
+  if (!guildId || !(await canManageGuild(guildId, userId))) {
+    throw new ApiError("forbidden", "서버 관리 권한자만 인증 버튼을 게시할 수 있습니다.", 403);
+  }
+  const target = (channelId || config.certChannelId || "").trim();
+  if (!target) throw new ApiError("invalid", "인증 채널을 먼저 선택해 주세요.");
+
+  const okSent = await sendChannelMessage(target, {
+    embeds: [
+      {
+        title: "🎯 스킬업 인증",
+        description: "아래 버튼을 눌러 스킬업을 인증하세요.\n운영진 승인 후 누적 스킬업과 이번 주 현황에 반영됩니다.",
+        color: 0x5865f2,
+      },
+    ],
+    components: [
+      {
+        type: 1, // Action Row
+        components: [
+          { type: 2, style: 1, label: "스킬업 인증하기", custom_id: OPEN_PREFIX + CERT_FORM_KEY }, // Primary Button
+        ],
+      },
+    ],
+  });
+  if (!okSent) throw new ApiError("discord", "메시지 게시에 실패했습니다. 봇 권한(메시지 보내기)·채널을 확인해 주세요.", 502);
+
+  await supabaseAdmin().from("audit_log").insert({
+    actor_id: userId,
+    action: "setup.cert_panel",
+    target_type: "channel",
+    target_id: target,
   });
   return { ok: true };
 }

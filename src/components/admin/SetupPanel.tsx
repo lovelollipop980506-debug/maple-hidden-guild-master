@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useApi } from "@/lib/client/useApi";
-import { apiPut, ApiError } from "@/lib/client/api";
+import { apiPut, apiPost, ApiError } from "@/lib/client/api";
 import { toast } from "@/lib/client/toast";
 import { Loading } from "@/components/Loading";
 
@@ -13,7 +13,7 @@ type SetupOptions = {
   inviteUrl: string;
   channels: { id: string; name: string }[];
   roles: { id: string; name: string; suggestedTier: string }[];
-  config: { notifyChannelId: string | null };
+  config: { notifyChannelId: string | null; certChannelId: string | null };
 };
 
 export function SetupPanel() {
@@ -22,12 +22,17 @@ export function SetupPanel() {
   const { data, loading, error } = useApi<SetupOptions>(path);
   // 운영진으로 지정된 역할 id 집합. 나머지는 자동: 소유자/관리자=관리자, 역할 보유=멤버.
   const [reviewers, setReviewers] = useState<Set<string>>(new Set());
+  const [notifyCh, setNotifyCh] = useState("");
+  const [certCh, setCertCh] = useState("");
   const [busy, setBusy] = useState(false);
+  const [posting, setPosting] = useState(false);
 
   useEffect(() => {
     if (!data) return;
     if (!guildId) setGuildId(data.guild.id);
     setReviewers(new Set(data.roles.filter((r) => r.suggestedTier === "reviewer").map((r) => r.id)));
+    setNotifyCh(data.config.notifyChannelId ?? "");
+    setCertCh(data.config.certChannelId ?? "");
   }, [data, guildId]);
 
   if (loading && !data) return <Loading />;
@@ -57,12 +62,30 @@ export function SetupPanel() {
     setBusy(true);
     try {
       const roleTiers = Object.fromEntries(data!.roles.map((r) => [r.id, reviewers.has(r.id) ? "reviewer" : "none"]));
-      await apiPut("/api/v1/setup", { guildId: data!.guild.id, roleTiers });
+      await apiPut("/api/v1/setup", {
+        guildId: data!.guild.id,
+        notifyChannelId: notifyCh,
+        certChannelId: certCh,
+        roleTiers,
+      });
       toast("설정을 저장했습니다. 다시 로그인하면 적용됩니다.");
     } catch (e) {
       toast((e as ApiError).message);
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function postCertButton() {
+    if (!certCh) return toast("인증 채널을 먼저 선택하세요.");
+    setPosting(true);
+    try {
+      await apiPost("/api/v1/setup/cert-panel", { channelId: certCh });
+      toast("인증 채널에 스킬업 인증 버튼을 올렸습니다.");
+    } catch (e) {
+      toast((e as ApiError).message);
+    } finally {
+      setPosting(false);
     }
   }
 
@@ -109,6 +132,43 @@ export function SetupPanel() {
           {data.setupCompleted && (
             <div className="tiny" style={{ marginTop: 8 }}>현재 저장된 서버를 다른 서버로 바꿔 저장할 수 있습니다.</div>
           )}
+        </div>
+      </div>
+
+      <div className="card" style={{ padding: 20, marginBottom: 14 }}>
+        <div className="form-section-title">채널</div>
+        <div style={{ display: "grid", gap: 16, marginTop: 4 }}>
+          <div>
+            <label className="tiny" style={{ display: "block", marginBottom: 6, fontWeight: 800 }}>알림 채널</label>
+            <select value={notifyCh} onChange={(e) => setNotifyCh(e.target.value)} style={{ width: "100%", height: 42 }}>
+              <option value="">선택 안 함</option>
+              {data.channels.map((c) => (
+                <option key={c.id} value={c.id}>
+                  # {c.name}
+                </option>
+              ))}
+            </select>
+            <p className="tiny" style={{ marginTop: 6 }}>가입·인증 승인/반려 알림이 이 채널로 전송됩니다.</p>
+          </div>
+          <div>
+            <label className="tiny" style={{ display: "block", marginBottom: 6, fontWeight: 800 }}>스킬업 인증 채널</label>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <select value={certCh} onChange={(e) => setCertCh(e.target.value)} style={{ flex: 1, minWidth: 220, height: 42 }}>
+                <option value="">선택 안 함</option>
+                {data.channels.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    # {c.name}
+                  </option>
+                ))}
+              </select>
+              <button className="more" style={{ flexShrink: 0, height: 42, whiteSpace: "nowrap" }} onClick={postCertButton} disabled={posting || !certCh}>
+                {posting ? "게시 중…" : "인증 버튼 올리기"}
+              </button>
+            </div>
+            <p className="tiny" style={{ marginTop: 6 }}>
+              선택한 채널에 “스킬업 인증하기” 버튼을 올립니다. 멤버가 눌러 인증을 제출해요. (채널 변경 시 먼저 설정 저장)
+            </p>
+          </div>
         </div>
       </div>
 
