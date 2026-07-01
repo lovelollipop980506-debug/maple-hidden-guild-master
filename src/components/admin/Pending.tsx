@@ -25,11 +25,11 @@ export function Pending() {
     try {
       await apiPost(`/api/v1/submissions/${id}/review`, { decision });
       toast(decision === "approved" ? "승인 완료" : "거절 처리 완료");
-      reload(); // 사이드바 stats 는 api 클라이언트가 공통 재검증
+      await reload(); // 목록 갱신까지 기다려 스피너 타이밍 정확히
     } catch (e) {
       const err = e as ApiError;
       toast(err.message);
-      if (err.status === 404) reload(); // 이미 처리된 항목 → 목록 새로고침으로 자기보정
+      if (err.status === 404) await reload();
     }
   }
 

@@ -33,7 +33,7 @@ export function NoticesAdmin() {
       else await apiPost("/api/v1/notices", payload);
       toast("공지사항을 저장했습니다");
       clear();
-      reload();
+      await reload();
     } catch (e) {
       toast((e as ApiError).message);
     }
@@ -53,7 +53,7 @@ export function NoticesAdmin() {
       await apiDelete(`/api/v1/notices/${n.id}`);
       toast("공지사항을 삭제했습니다");
       if (editId === n.id) clear();
-      reload();
+      await reload();
     } catch (e) {
       toast((e as ApiError).message);
     }

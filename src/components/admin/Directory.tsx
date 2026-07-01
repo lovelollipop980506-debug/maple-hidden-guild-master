@@ -42,7 +42,7 @@ export function Directory() {
       toast("스킬업 인증을 등록했습니다");
       setCount("");
       setMemo("");
-      reload();
+      await reload();
     } catch (e) {
       toast((e as ApiError).message);
     }
@@ -54,7 +54,7 @@ export function Directory() {
       await apiDelete(`/api/v1/members/${discordId}`);
       toast("멤버를 삭제했습니다");
       setOpen(null);
-      reload();
+      await reload();
     } catch (e) {
       toast((e as ApiError).message);
     }

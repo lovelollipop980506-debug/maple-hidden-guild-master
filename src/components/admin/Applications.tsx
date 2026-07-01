@@ -25,11 +25,11 @@ export function Applications() {
     try {
       await apiPost(`/api/v1/submissions/${id}/review`, { decision });
       toast(decision === "approved" ? "가입 승인했습니다" : "가입 신청을 반려했습니다");
-      reload();
+      await reload(); // 목록 갱신까지 기다려야 스피너가 올바른 시점에 멈춤
     } catch (e) {
       const err = e as ApiError;
       toast(err.message);
-      if (err.status === 404) reload();
+      if (err.status === 404) await reload();
     }
   }
 
@@ -39,7 +39,7 @@ export function Applications() {
     try {
       await apiPost(`/api/v1/users/${userId}/block`, { blocked, reason });
       toast(blocked ? "계정을 차단했습니다" : "차단을 해제했습니다");
-      reload();
+      await reload();
     } catch (e) {
       toast((e as ApiError).message);
     }
