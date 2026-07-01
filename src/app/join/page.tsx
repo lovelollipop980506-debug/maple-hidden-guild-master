@@ -191,7 +191,14 @@ export default function JoinPage() {
               </div>
             </div>
             <button className="submit" onClick={submit} disabled={busy}>
-              {busy ? "제출 중…" : "가입 신청하기"}
+              {busy ? (
+                <span className="btn-loading">
+                  <span className="btn-spinner" />
+                  제출 중…
+                </span>
+              ) : (
+                "가입 신청하기"
+              )}
             </button>
           </>
         )}
