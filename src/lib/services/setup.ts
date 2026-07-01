@@ -3,6 +3,7 @@ import {
   getManageableGuilds,
   getBotGuilds,
   canManageGuild,
+  getUserGuildStanding,
   listGuildChannels,
   listGuildRoles,
   botInviteUrl,
@@ -17,19 +18,30 @@ import { env } from "@/lib/env";
  * 봇이 없으면 누구도 admin 으로 식별될 수 없으므로(소유자/역할 조회가 봇 토큰 기반),
  * 로그인한 사용자에게 "봇 초대" 화면을 먼저 띄우는 게이트에서 쓴다. 권한 무관(로그인만).
  */
-export async function getBootstrapStatus() {
+export async function getBootstrapStatus(accessToken?: string) {
   const config = await getConfig();
   const guildId = env.lockedGuildId || config.guildId;
+  const base = { guildId, inviteUrl: botInviteUrl(guildId || undefined), locked: !!env.lockedGuildId };
   // 설정 완료됐다면 봇은 반드시 들어와 있다(셋업이 봇을 요구) → Discord 호출 생략(정상 운영 지연 0).
   if (config.setupCompleted && guildId) {
-    return { guildId, botReady: true, inviteUrl: botInviteUrl(guildId), locked: !!env.lockedGuildId };
+    return { ...base, botReady: true, member: true, canInvite: false, standingUnknown: false };
   }
   let botReady = false;
   if (guildId) {
     const bots = await getBotGuilds();
     botReady = bots.some((g) => g.id === guildId);
   }
-  return { guildId, botReady, inviteUrl: botInviteUrl(guildId || undefined), locked: !!env.lockedGuildId };
+  // 봇 초대 전에도 사용자 OAuth 토큰으로 "이 사람이 이 서버에 봇을 초대할 권한이 있는지" 판별.
+  const standing = guildId
+    ? await getUserGuildStanding(accessToken ?? "", guildId)
+    : { member: false, canManage: false, unknown: !!accessToken ? false : true };
+  return {
+    ...base,
+    botReady,
+    member: standing.member,
+    canInvite: standing.canManage,
+    standingUnknown: standing.unknown,
+  };
 }
 
 /**

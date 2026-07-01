@@ -42,6 +42,26 @@ export async function getGuildMemberRoles(accessToken: string, guildId: string):
   return data.roles ?? [];
 }
 
+/**
+ * 사용자 OAuth 토큰으로 특정 길드에서의 상태를 확인한다(봇이 길드에 없어도 됨 — 부트스트랩용).
+ * `/users/@me/guilds`는 각 길드에 대한 owner/permissions 를 함께 주므로, 봇 초대 전에도
+ * "이 사람이 이 서버에 봇을 초대할 권한(소유자/서버 관리)이 있는지" 판별할 수 있다.
+ * unknown = 토큰 만료 등으로 판별 불가.
+ */
+export async function getUserGuildStanding(
+  accessToken: string,
+  guildId: string,
+): Promise<{ member: boolean; canManage: boolean; unknown: boolean }> {
+  if (!accessToken || !guildId) return { member: false, canManage: false, unknown: !accessToken };
+  const res = await fetch(`${API}/users/@me/guilds`, { headers: { Authorization: `Bearer ${accessToken}` } });
+  if (!res.ok) return { member: false, canManage: false, unknown: true };
+  const guilds = (await res.json()) as Array<{ id: string; owner?: boolean; permissions?: string }>;
+  const g = guilds.find((x) => x.id === guildId);
+  if (!g) return { member: false, canManage: false, unknown: false };
+  const canManage = !!g.owner || hasManageGuild(BigInt(g.permissions ?? "0"));
+  return { member: true, canManage, unknown: false };
+}
+
 /** Send a message to a channel. Returns true on success. */
 export async function sendChannelMessage(channelId: string, payload: Json): Promise<boolean> {
   if (!channelId) return false;

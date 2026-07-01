@@ -37,7 +37,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
-    async jwt({ token, account, profile }) {
+    async jwt({ token, account, profile, trigger }) {
       // Runs with `account` only on the initial sign-in.
       if (account?.access_token && profile) {
         const discordId = profile.id as string;
@@ -104,7 +104,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       // 전) 누구도 멤버로 식별될 수 없으니 guest 로 강등 → 스테일 admin 세션이 권한 유지 못함.
       const did = token.discordId as string | undefined;
       const checkedAt = (token.tierCheckedAt as number | undefined) ?? 0;
-      if (did && Date.now() - checkedAt > TIER_REVALIDATE_MS) {
+      // update() 트리거(봇 초대 감지 후 세션 갱신)면 스로틀 무시하고 즉시 재검증.
+      const force = trigger === "update";
+      if (did && (force || Date.now() - checkedAt > TIER_REVALIDATE_MS)) {
         try {
           const config = await getConfig();
           const guildId = config.guildId; // 잠금 설정 시 항상 운영 길드
