@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import { useApi } from "@/lib/client/useApi";
 import { useIsMobile } from "@/lib/client/useIsMobile";
 import { apiPost, ApiError } from "@/lib/client/api";
@@ -6,6 +7,7 @@ import { toast } from "@/lib/client/toast";
 import { SKILL_LABELS } from "@/lib/client/maple";
 import { Loading } from "@/components/Loading";
 import { AsyncButton } from "@/components/AsyncButton";
+import { Lightbox } from "@/components/Lightbox";
 import type { ListResult, ReviewSubmission } from "@/lib/client/types";
 
 function fmt(iso: string) {
@@ -18,6 +20,7 @@ export function Pending() {
   );
   const rows = data?.items ?? [];
   const mobile = useIsMobile();
+  const [zoom, setZoom] = useState<string | null>(null);
 
   if (loading && !data) return <Loading />;
 
@@ -62,18 +65,18 @@ export function Pending() {
                         {SKILL_LABELS[a.skill] || a.skill || "-"} · {a.count ?? "-"}회 · {fmt(r.created_at)}
                       </div>
                     </div>
-                    {img && <img className="shot" src={img} alt="증빙" onClick={() => window.open(img, "_blank")} />}
+                    {img && <img className="shot" src={img} alt="증빙" onClick={() => setZoom(img)} />}
                   </div>
                   {a.memo && (
                     <div className="m-item-sub" style={{ marginTop: 8 }}>
                       메모: {a.memo}
                     </div>
                   )}
-                  <div className="m-item-actions">
-                    <AsyncButton className="small-btn approve" onClick={() => decide(r.id, "approved")}>
+                  <div className="m-actions">
+                    <AsyncButton className="m-btn approve" onClick={() => decide(r.id, "approved")}>
                       승인
                     </AsyncButton>
-                    <AsyncButton className="small-btn reject" onClick={() => decide(r.id, "rejected")}>
+                    <AsyncButton className="m-btn reject" onClick={() => decide(r.id, "rejected")}>
                       거절
                     </AsyncButton>
                   </div>
@@ -118,7 +121,7 @@ export function Pending() {
                     <td>{fmt(r.created_at)}</td>
                     <td>
                       {img ? (
-                        <img className="shot" src={img} alt="증빙" onClick={() => window.open(img, "_blank")} />
+                        <img className="shot" src={img} alt="증빙" onClick={() => setZoom(img)} />
                       ) : (
                         "-"
                       )}
@@ -141,6 +144,8 @@ export function Pending() {
         </table>
       </div>
       )}
+
+      <Lightbox src={zoom} onClose={() => setZoom(null)} />
     </div>
   );
 }

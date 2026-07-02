@@ -140,7 +140,32 @@ export function Applications() {
                           <b>{a.playtime || "-"}</b>
                         </div>
                       </div>
-                      <div className="m-item-actions">{actions(r)}</div>
+                      {r.status === "pending" ? (
+                        <div className="m-actions">
+                          <AsyncButton className="m-btn approve" onClick={() => decide(r.id, "approved")}>
+                            승인
+                          </AsyncButton>
+                          <AsyncButton className="m-btn reject" onClick={() => decide(r.id, "rejected")}>
+                            반려
+                          </AsyncButton>
+                        </div>
+                      ) : (
+                        <div className="m-actions">
+                          <span className={`m-status ${r.status === "approved" ? "ok" : "no"}`}>
+                            {r.status === "approved" ? "승인됨" : `반려됨${r.review_note ? ` · ${r.review_note}` : ""}`}
+                          </span>
+                        </div>
+                      )}
+                      {r.user_id && (
+                        <div className="m-actions">
+                          <AsyncButton
+                            className="m-btn block"
+                            onClick={() => toggleBlock(r.user_id!, nickOf(r), !r.user?.blocked)}
+                          >
+                            {r.user?.blocked ? "차단 해제" : "차단"}
+                          </AsyncButton>
+                        </div>
+                      )}
                     </>
                   )}
                 </div>
